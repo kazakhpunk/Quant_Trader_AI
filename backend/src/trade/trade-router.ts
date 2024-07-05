@@ -8,7 +8,7 @@ const createTradeRouter = async (db: Db) => {
   const tradeService = new TradeService(db);
   const tradeController = new TradeController(tradeService);
 
-  router.post('/trade', tradeController.executeTrades);
+  router.post('/trade/:amount', tradeController.executeTrades);
   router.post('/monitor', tradeController.startMonitoringCronJob); 
   router.post('/update', tradeController.startCombinedCronJob);
   router.get('/price/:ticker', tradeController.getLatestPrice);

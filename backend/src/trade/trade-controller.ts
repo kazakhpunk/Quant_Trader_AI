@@ -16,7 +16,8 @@ class TradeController {
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
     try {
-      await this.tradeService.executeTrades();
+      const amount = req.params.amount;
+      await this.tradeService.executeTrades(amount);
       res.status(200).json({ message: 'Trades executed successfully' });
     } catch (error: any) {
       console.error('Error executing trades:', error);

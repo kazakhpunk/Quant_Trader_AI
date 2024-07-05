@@ -1,16 +1,22 @@
 import { Router } from 'express';
 import userRouter from './user/user-router';
-import gptRouter from './gpt/gpt-router';
-import analysisRouter from './analysis/analysis-router';
-import tradeRouter from './trade/trade-router';
+// import createGptRouter from './gpt/gpt-router';
+import createAnalysisRouter from './analysis/analysis-router';
+import createTradeRouter from './trade/trade-router';
+import messageRouter from './message/message-router';
+import { Db } from 'mongodb';
 
-const globalRouter = Router();
+const createGlobalRouter = async (db: Db) => {
+  const router = Router();
 
-// Use the userRouter for user-related routes
-globalRouter.use(userRouter);
-globalRouter.use(gptRouter);
-globalRouter.use(analysisRouter);
-globalRouter.use(tradeRouter);
+  const tradeRouter = await createTradeRouter(db);
+  const analysisRouter = await createAnalysisRouter(db);
 
-// other routers can be added here
-export default globalRouter;
+  router.use(analysisRouter);
+  router.use(tradeRouter);
+  router.use(messageRouter);
+
+  return router;
+};
+
+export default createGlobalRouter;

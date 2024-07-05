@@ -1,14 +1,26 @@
 import { Router } from 'express';
 import GptService from './gpt-service';
 import GptController from './gpt-controller';
-
-//in order to provide our frontend with the user data, we need to specify user routes
+import { Server, WebSocket } from 'ws';
 
 const gptRouter = Router();
 
 const gptService = new GptService();
 const gptController = new GptController(gptService);
 
-gptRouter.post('/gpt/', gptController.getBooks);
+const wss = new Server({ noServer: true });
 
-export default gptRouter;
+wss.on('connection', (ws: WebSocket) => {
+  ws.on('message', async (message: string) => {
+    const userPrompt = message.toString();
+    await gptController.handleWebSocketConnection(ws, userPrompt);
+  });
+
+  ws.send('Connected to WebSocket server');
+});
+
+gptRouter.get('/roadmaps', (req, res) => {
+  res.send('Roadmap API is running');
+});
+
+export { gptRouter, wss };

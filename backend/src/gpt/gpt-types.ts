@@ -1,5 +1,7 @@
-export type Book = {
-  name: string;
-  author: string;
-  description: string;
+export type Trade = {
+  symbol: string;
+  action: string;
+  quantity: number;
+  price: number;
+  reason?: string;
 };

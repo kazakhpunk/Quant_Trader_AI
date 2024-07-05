@@ -1,22 +1,23 @@
-import GptService from './gpt-service';
 import { Request, Response } from 'express';
+import GptService from './gpt-service';
+import WebSocket from 'ws';
 
-// a user controller is a class that handles the user routes (incoming frontend requests)
 class GptController {
-  private userService: GptService;
+  private gptService: GptService;
 
-  constructor(userService: GptService) {
-    this.userService = userService;
+  constructor(gptService: GptService) {
+    this.gptService = gptService;
   }
-  getBooks = async (req: Request, res: Response) => {
-    const { userPrompt } = req.body;
+
+  async handleWebSocketConnection(ws: WebSocket, userPrompt: string) {
     try {
-      const response = await this.userService.getBooks(userPrompt);
-      res.status(201).json(response);
-    } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      await this.gptService.create(userPrompt, (data) => {
+        ws.send(JSON.stringify(data));
+      });
+    } catch (error) {
+      ws.send(JSON.stringify({ error: 'Failed to process OpenAI stream' }));
     }
-  };
+  }
 }
 
 export default GptController;

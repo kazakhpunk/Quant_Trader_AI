@@ -329,7 +329,7 @@ class AnalysisService {
 
       // Criteria for long candidates
       const isTechnicallyLong = latestSMA20 > latestSMA50 && latestEMA20 > latestEMA50 && latestRSI14 > 70;
-      const isFundamentallyStrong = peRatio > 0 && pegRatio > 0 && profitMargin > 0 && dividendYield > 0 && payoutRatio > 0 && revenue > 0 && freeCashFlow > 0;
+      const isFundamentallyStrong = peRatio > 0 && peRatio < 30 && pegRatio > 0 && profitMargin > 0 && dividendYield > 0 && payoutRatio > 0 && revenue > 0 && freeCashFlow > 0;
 
       // Criteria for short candidates
       const isTechnicallyShort = latestSMA20 < latestSMA50 && latestEMA20 < latestEMA50 && latestRSI14 < 30;

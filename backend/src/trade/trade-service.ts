@@ -100,12 +100,12 @@ class TradeService {
     }
   }
 
-  public async executeTrades(): Promise<void> {
+  public async executeTrades(amount: string): Promise<{ longCandidates: any[]; shortCandidates: any[]; }> {
     const { longCandidates, shortCandidates } = await this.analysisService.getCandidatesFromDB();
     console.log('Long candidates:', longCandidates);
     console.log('Short candidates:', shortCandidates);
 
-    const totalTradingAmount = 100; // Example amount in dollars
+    const totalTradingAmount = parseInt(amount); // Example amount in dollars
 
     const longAllocation = totalTradingAmount / (longCandidates.length + shortCandidates.length); 
     const shortAllocation = totalTradingAmount / (longCandidates.length + shortCandidates.length); 
@@ -125,6 +125,8 @@ class TradeService {
     await tradeCandidates(longCandidates, longAllocation, true);
 
     await this.startMonitoringCronJob();
+
+    return { longCandidates, shortCandidates };
   }
 
   public async checkLongStatus() {
@@ -179,6 +181,7 @@ class TradeService {
   }
 
   public async startCombinedCronJob() {
+    console.log('Running daily data fetch and analysis job');
     await this.fetchAndAnalyzeData();
     cron.schedule('0 0 * * *', async () => { // Schedule to run daily at midnight
       console.log('Running daily data fetch and analysis job');

@@ -5,6 +5,7 @@ import { logger } from './logger';
 import createTechnicalRouter from './analysis/analysis-router';
 import createTradeRouter from './trade/trade-router';
 import rateLimit from 'express-rate-limit';
+import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,11 @@ const limiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 
+app.use(cors({
+  origin: '*', 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(limiter);
 
 const connectToDatabase = async (uri: string): Promise<Db> => {
