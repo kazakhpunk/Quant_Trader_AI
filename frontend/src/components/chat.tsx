@@ -74,7 +74,7 @@ export function Chat() {
   const handlePurchase = async () => {
     setLoading(true);
     try {
-      const tradeResponse = await axios.post(`http://localhost:8000/api/v1/trade/${allocation}`);
+      const tradeResponse = await axios.post(`quanttraderai-production.up.railway.app/api/v1/trade/${allocation}`);
       if (tradeResponse.status === 200) {
         setPanel(false);
         const newMessage: any = {
