@@ -18,6 +18,7 @@ const analysisRouter = async (db: Db) => {
   router.post('/tickers', technicalController.addTicker);
   router.delete('/tickers', technicalController.removeTicker);
   router.get('/fetchHistoricalData/:ticker', technicalController.fetchHistoricalData);
+  router.get('/fetchIntervalHistoricalData', technicalController.fetchIntervalHistoricalData);
   router.get('/fetchRealTimeData/:ticker', technicalController.fetchRealTimeData);
   router.get('/getNewsArticles/:ticker', technicalController.getNewsArticles);
   router.get('/analyzeSentiment/:ticker', technicalController.analyzeSentiment);

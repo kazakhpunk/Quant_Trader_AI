@@ -18,6 +18,7 @@ class AnalysisController {
     this.postFundamentalData = this.postFundamentalData.bind(this);
     this.getFundamentalData = this.getFundamentalData.bind(this);
     this.fetchHistoricalData = this.fetchHistoricalData.bind(this); 
+    this.fetchIntervalHistoricalData = this.fetchIntervalHistoricalData.bind(this); 
     this.fetchRealTimeData = this.fetchRealTimeData.bind(this); 
     this.getNewsArticles = this.getNewsArticles.bind(this); 
     this.analyzeSentiment = this.analyzeSentiment.bind(this); 
@@ -167,6 +168,17 @@ class AnalysisController {
     }
   }
 
+  public async fetchIntervalHistoricalData(req: Request, res: Response): Promise<void> {
+    const ticker = req.query.ticker as string; 
+    const scale = req.query.scale as "7d" | "30d" | "3mo";
+    try {
+      console.log(ticker, scale);
+      const data = await this.analysisService.fetchIntervalHistoricalData(ticker, scale);
+      res.json({ ticker, data });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
 }
 
 export default AnalysisController;

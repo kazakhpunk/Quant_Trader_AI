@@ -89,6 +89,41 @@ class AnalysisService {
     }
   }
 
+  public async fetchIntervalHistoricalData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any[]> {
+    const endDate = Math.floor(new Date().getTime() / 1000);
+    let startDate: number;
+
+    switch (scale) {
+        case '7d':
+            startDate = endDate - 60 * 60 * 24 * 7 * 1.5;
+            break;
+        case '30d':
+            startDate = endDate - 60 * 60 * 24 * 30 * 1.5;
+            break;
+        case '3mo':
+            startDate = endDate - 60 * 60 * 24 * 90 * 1.6;
+            break;
+        default:
+            throw new Error('Invalid scale');
+    }
+
+    const queryOptions = {
+        period1: startDate,
+        period2: endDate,
+        interval: '1d' as '1d'
+    };
+
+    try {
+        const result = await yahooFinance.historical(ticker, queryOptions);
+        return result;
+    } catch (error) {
+        console.error(`Error fetching data for ticker ${ticker}:`, error);
+        throw new Error(`Could not fetch historical data for ticker ${ticker}`);
+    }
+}
+
+  
+
   public async getFundamentalData(ticker: string): Promise<any> {
     try { const summary = await yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'summaryDetail', 'defaultKeyStatistics']});
     return summary;
@@ -209,6 +244,20 @@ class AnalysisService {
     );
 
     return { ticker, sma50, sma20, ema50, ema20, rsi14 };
+  }
+
+  public async getIntervalTechnicalData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any> {
+    const data = await this.fetchIntervalHistoricalData(ticker, scale);
+    const closePrices = data.map(day => day.close);
+    const technicalIndicators = {
+        sma50: this.calculateSMA(closePrices, 50),
+        sma20: this.calculateSMA(closePrices, 20),
+        ema50: this.calculateEMA(closePrices, 50),
+        ema20: this.calculateEMA(closePrices, 20),
+        rsi14: this.calculateRSI(closePrices, 14),
+    };
+
+    return { ticker, scale, technicalIndicators };
   }
 
   public async getAllTechnicalData(): Promise<Array<{ ticker: string, sma50: number, sma20: number, ema50: number, ema20: number, rsi14: number }>> {
