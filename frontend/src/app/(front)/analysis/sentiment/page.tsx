@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import { SentimentChart } from "@/components/v2/sentiment-chart";
 
 export default function NewPostPage() {
   return (
@@ -39,7 +40,8 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <PlaceholderContent />
+      {/* <PlaceholderContent /> */}
+      <SentimentChart/>
     </ContentLayout>
   );
 }

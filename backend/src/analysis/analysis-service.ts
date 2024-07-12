@@ -122,7 +122,161 @@ class AnalysisService {
     }
 }
 
-  
+public async fetchExtendedHistoricalData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any[]> {
+  const endDate = Math.floor(new Date().getTime() / 1000);
+  let startDate: number;
+
+  switch (scale) {
+      case '7d':
+          startDate = endDate - 60 * 60 * 24 * 7 * 1.5 * 8.1;
+          break;
+      case '30d':
+          startDate = endDate - 60 * 60 * 24 * 30 * 1.5 * 2.7;
+          break;
+      case '3mo':
+          startDate = endDate - 60 * 60 * 24 * 90 * 1.6 * 1.5;
+          break;
+      default:
+          throw new Error('Invalid scale');
+  }
+
+  const queryOptions = {
+      period1: startDate,
+      period2: endDate,
+      interval: '1d' as '1d'
+  };
+
+  try {
+      const result = await yahooFinance.historical(ticker, queryOptions);
+      return result;
+  } catch (error) {
+      console.error(`Error fetching data for ticker ${ticker}:`, error);
+      throw new Error(`Could not fetch historical data for ticker ${ticker}`);
+  }
+}
+
+public async getIntervalSMAData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any> {
+  const data = await this.fetchExtendedHistoricalData(ticker, scale);
+  const closePrices = data.map(day => day.close);
+
+  const sma20 = this.calculateSMAArray(closePrices, 20);
+  const sma50 = this.calculateSMAArray(closePrices, 50);
+
+  const filteredData = data.slice(data.length - (scale === '7d' ? 7 : scale === '30d' ? 30 : 90));
+  const smaData = filteredData.map((day, index) => ({
+      date: day.date,
+      close: day.close,
+      sma20: sma20[index + (data.length - filteredData.length)],
+      sma50: sma50[index + (data.length - filteredData.length)],
+  }));
+
+  return { ticker, scale, smaData };
+}
+
+public async getIntervalEMAData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any> {
+  const data = await this.fetchExtendedHistoricalData(ticker, scale);
+  const closePrices = data.map(day => day.close);
+
+  const ema20 = this.calculateEMAArray(closePrices, 20);
+  const ema50 = this.calculateEMAArray(closePrices, 50);
+
+  const daysToFilter = scale === '7d' ? 7 : scale === '30d' ? 30 : 90;
+
+  const filteredData = data.slice(data.length - daysToFilter);
+  const emaData = filteredData.map((day, index) => ({
+      date: day.date,
+      close: day.close,
+      ema20: ema20[index + (data.length - filteredData.length)],
+      ema50: ema50[index + (data.length - filteredData.length)],
+  }));
+
+  return { ticker, scale, emaData };
+}
+
+public async getIntervalRSIData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any> {
+  const data = await this.fetchExtendedHistoricalData(ticker, scale);
+  const closePrices = data.map(day => day.close);
+
+  const rsi14 = this.calculateRSIArray(closePrices, 14);
+
+  const daysToFilter = scale === '7d' ? 7 : scale === '30d' ? 30 : 90;
+
+  const filteredData = data.slice(data.length - daysToFilter);
+  const rsiData = filteredData.map((day, index) => ({
+      date: day.date,
+      close: day.close,
+      rsi14: rsi14[index + (data.length - filteredData.length)],
+  }));
+
+  return { ticker, scale, rsiData };
+}
+
+private calculateEMAArray(data: number[], period: number): (number | null)[] {
+  let emaArray: any[] = [];
+  let multiplier = 2 / (period + 1);
+
+  let initialSMA = this.calculateSMAArray(data.slice(0, period), period)[period - 1];
+  if (initialSMA === null) {
+    initialSMA = data[period - 1]; 
+  }
+  emaArray[period - 1] = initialSMA;
+
+  for (let i = period; i < data.length; i++) {
+    emaArray[i] = ((data[i] - emaArray[i - 1]) * multiplier) + emaArray[i - 1];
+  }
+
+  for (let i = 0; i < period - 1; i++) {
+    emaArray[i] = null;
+  }
+
+  return emaArray;
+}
+
+private calculateRSIArray(data: number[], period: number): (number | null)[] {
+  let rsiArray: any[] = [];
+  let gains: number[] = [];
+  let losses: number[] = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const difference = data[i] - data[i - 1];
+    if (difference >= 0) {
+      gains.push(difference);
+      losses.push(0);
+    } else {
+      gains.push(0);
+      losses.push(-difference);
+    }
+  }
+
+  for (let i = 0; i < data.length; i++) {
+      if (i < period) {
+          rsiArray.push(null); 
+      } else {
+          const averageGain = gains.slice(i - period, i).reduce((acc, val) => acc + val, 0) / period;
+          const averageLoss = losses.slice(i - period, i).reduce((acc, val) => acc + val, 0) / period;
+
+          const relativeStrength = averageGain / averageLoss;
+          const rsi = 100 - (100 / (1 + relativeStrength));
+          rsiArray.push(rsi);
+      }
+  }
+
+  return rsiArray;
+}
+
+private calculateSMAArray(data: number[], period: number): (number | null)[] {
+  let smaArray: (number | null)[] = [];
+  for (let i = 0; i < data.length; i++) {
+    if (i < period - 1) {
+      smaArray.push(null); 
+    } else {
+      const slice = data.slice(i - period + 1, i + 1);
+      const average = slice.reduce((acc, val) => acc + val, 0) / period;
+      smaArray.push(average);
+    }
+  }
+  return smaArray;
+}
 
   public async getFundamentalData(ticker: string): Promise<any> {
     try { const summary = await yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'summaryDetail', 'defaultKeyStatistics']});
@@ -246,20 +400,6 @@ class AnalysisService {
     return { ticker, sma50, sma20, ema50, ema20, rsi14 };
   }
 
-  public async getIntervalTechnicalData(ticker: string, scale: '7d' | '30d' | '3mo'): Promise<any> {
-    const data = await this.fetchIntervalHistoricalData(ticker, scale);
-    const closePrices = data.map(day => day.close);
-    const technicalIndicators = {
-        sma50: this.calculateSMA(closePrices, 50),
-        sma20: this.calculateSMA(closePrices, 20),
-        ema50: this.calculateEMA(closePrices, 50),
-        ema20: this.calculateEMA(closePrices, 20),
-        rsi14: this.calculateRSI(closePrices, 14),
-    };
-
-    return { ticker, scale, technicalIndicators };
-  }
-
   public async getAllTechnicalData(): Promise<Array<{ ticker: string, sma50: number, sma20: number, ema50: number, ema20: number, rsi14: number }>> {
     const promises = Array.from(this.tickers).map(async ticker => {
       try {
@@ -275,15 +415,15 @@ class AnalysisService {
     return validResults;
   }
 
-  public async getNewsArticles(ticker: string): Promise<{ title: string, link: string }[]> {
+  public async getNewsArticles(ticker: string): Promise<{ title: string, link: string, date: Date }[]> {
     try {
-      const news = await yahooFinance.search(ticker, { newsCount: 5});
+      const news = await yahooFinance.search(ticker, { newsCount: 10});
 
       if (!news.news || news.news.length === 0) {
         throw new Error('No news articles found');
       }
       console.log(news)
-      return news.news.map(article => ({ title: article.title, link: article.link })); 
+      return news.news.map(article => ({ title: article.title, link: article.link, date: article.providerPublishTime })); 
     } catch (error) {
       if ((error as any).type === 'invalid-json') {
         console.error(`Error fetching news articles for ${ticker}:`, (error as any).message);
@@ -319,14 +459,13 @@ class AnalysisService {
     }
   }
 
-  public async analyzeSentiment(ticker) {
+  public async analyzeSentiment(ticker: string) {
     try {
-      const newsArticles = await this.getNewsArticles(ticker);
-
-      const sentimentScores = await Promise.all(newsArticles.map(async ({ title, link }) => {
+      const newsArticles: { title: string, link: string, date: Date }[] = await this.getNewsArticles(ticker);
+      const sentimentScores = await Promise.all(newsArticles.map(async ({ title, link, date }) => {
         const articleContent = await this.fetchArticleContent(link);
         const result = this.sentiment.analyze(articleContent);
-        return { title, score: result.score };
+        return { title, score: result.score, date };
       }));
 
       return sentimentScores;
@@ -469,7 +608,6 @@ class AnalysisService {
     const shortCandidates = await this.db.collection('shortCandidates').find().toArray();
     return { longCandidates, shortCandidates };
   }
-
 
   public async fetchRealTimeData(ticker: string): Promise<any> {
     try {

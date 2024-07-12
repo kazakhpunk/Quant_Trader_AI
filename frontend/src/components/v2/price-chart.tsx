@@ -61,7 +61,7 @@ export default function PriceChart() {
           throw new Error(`Error: ${response.statusText}`)
         }
         const result = await response.json()
-        setChartData(result.data)
+        setChartData(result)
       } catch (error) {
         console.error("Error fetching data:", error)
         setError("Failed to fetch data. Please try again later.")
@@ -128,7 +128,7 @@ export default function PriceChart() {
     <Card className="mt-8">
       <CardHeader className="flex items-center gap-5 space-y-0 border-b py-5 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
-          <CardTitle>{selectedTicker} {latestPrice ? `$${latestPrice.toFixed(2)}` : ""}</CardTitle>
+          <CardTitle className="text-2xl">{selectedTicker} {latestPrice ? `$${latestPrice.toFixed(2)}` : ""}</CardTitle>
           <CardDescription>
             {getDescription(timeRange)}
           </CardDescription>

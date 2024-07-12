@@ -1,5 +1,4 @@
 import Link from "next/link";
-
 import PlaceholderContent from "@/components/v2/placeholder-content";
 import { ContentLayout } from "@/components/admin-panel/content-layout";
 import {
@@ -10,6 +9,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import TechnicalCharts from "@/components/v2/tech-chart";
 
 export default function NewPostPage() {
   return (
@@ -39,7 +39,8 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <PlaceholderContent />
+      {/* <PlaceholderContent /> */}
+      <TechnicalCharts/>
     </ContentLayout>
   );
 }

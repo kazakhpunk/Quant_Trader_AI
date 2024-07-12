@@ -14,6 +14,9 @@ class AnalysisController {
     this.removeTicker = this.removeTicker.bind(this);
     this.getAllTechnicalData = this.getAllTechnicalData.bind(this);
     this.getTechnicalData = this.getTechnicalData.bind(this);
+    this.getIntervalSMAData = this.getIntervalSMAData.bind(this);
+    this.getIntervalEMAData = this.getIntervalEMAData.bind(this);
+    this.getIntervalRSIData = this.getIntervalRSIData.bind(this);
     this.getAllFundamentalData = this.getAllFundamentalData.bind(this);
     this.postFundamentalData = this.postFundamentalData.bind(this);
     this.getFundamentalData = this.getFundamentalData.bind(this);
@@ -23,6 +26,7 @@ class AnalysisController {
     this.getNewsArticles = this.getNewsArticles.bind(this); 
     this.analyzeSentiment = this.analyzeSentiment.bind(this); 
     this.analyzeWithSentiment = this.analyzeWithSentiment.bind(this); 
+    this.fetchExtendedHistoricalData = this.fetchExtendedHistoricalData.bind(this); 
   }
 
   public async getAllTechnicalData(req: Request, res: Response): Promise<void> {
@@ -174,7 +178,55 @@ class AnalysisController {
     try {
       console.log(ticker, scale);
       const data = await this.analysisService.fetchIntervalHistoricalData(ticker, scale);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  public async fetchExtendedHistoricalData(req: Request, res: Response): Promise<void> {
+    const ticker = req.query.ticker as string; 
+    const scale = req.query.scale as "7d" | "30d" | "3mo";
+    try {
+      console.log(ticker, scale);
+      const data = await this.analysisService.fetchExtendedHistoricalData(ticker, scale);
       res.json({ ticker, data });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  public async getIntervalSMAData(req: Request, res: Response): Promise<void> {
+    const ticker = req.query.ticker as string; 
+    const scale = req.query.scale as "7d" | "30d" | "3mo";
+    try {
+      console.log(ticker, scale);
+      const data = await this.analysisService.getIntervalSMAData(ticker, scale);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  public async getIntervalEMAData(req: Request, res: Response): Promise<void> {
+    const ticker = req.query.ticker as string; 
+    const scale = req.query.scale as "7d" | "30d" | "3mo";
+    try {
+      console.log(ticker, scale);
+      const data = await this.analysisService.getIntervalEMAData(ticker, scale);
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  }
+
+  public async getIntervalRSIData(req: Request, res: Response): Promise<void> {
+    const ticker = req.query.ticker as string; 
+    const scale = req.query.scale as "7d" | "30d" | "3mo";
+    try {
+      console.log(ticker, scale);
+      const data = await this.analysisService.getIntervalRSIData(ticker, scale);
+      res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

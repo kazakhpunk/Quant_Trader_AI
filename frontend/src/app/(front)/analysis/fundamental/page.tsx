@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import { FundamentalChart } from "@/components/v2/fundamental-chart";
 
 export default function NewPostPage() {
   return (
@@ -40,6 +41,7 @@ export default function NewPostPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <PlaceholderContent />
+      {/* <FundamentalChart /> */}
     </ContentLayout>
   );
 }

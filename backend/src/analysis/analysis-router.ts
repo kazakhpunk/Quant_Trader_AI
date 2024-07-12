@@ -19,10 +19,14 @@ const analysisRouter = async (db: Db) => {
   router.delete('/tickers', technicalController.removeTicker);
   router.get('/fetchHistoricalData/:ticker', technicalController.fetchHistoricalData);
   router.get('/fetchIntervalHistoricalData', technicalController.fetchIntervalHistoricalData);
+  router.get('/fetchExtendedHistoricalData', technicalController.fetchExtendedHistoricalData);
   router.get('/fetchRealTimeData/:ticker', technicalController.fetchRealTimeData);
   router.get('/getNewsArticles/:ticker', technicalController.getNewsArticles);
   router.get('/analyzeSentiment/:ticker', technicalController.analyzeSentiment);
   router.get('/analyzeWithSentiment', technicalController.analyzeWithSentiment);
+  router.get('/getIntervalSMAData', technicalController.getIntervalSMAData);
+  router.get('/getIntervalEMAData', technicalController.getIntervalEMAData);
+  router.get('/getIntervalRSIData', technicalController.getIntervalRSIData);
 
   return router;
 };
