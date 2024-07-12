@@ -35,7 +35,7 @@ export function SentimentChart() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/analyzeSentiment/${ticker}`)
+      const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/analyzeSentiment/${ticker}`)
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`)
       }

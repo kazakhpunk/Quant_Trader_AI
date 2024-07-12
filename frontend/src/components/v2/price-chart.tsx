@@ -51,7 +51,7 @@ export default function PriceChart() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/fetchIntervalHistoricalData?ticker=${ticker}&scale=${timeRange}`, {
+        const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/fetchIntervalHistoricalData?ticker=${ticker}&scale=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
