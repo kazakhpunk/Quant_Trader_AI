@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
+import { TradePanel } from "@/components/v2/trade-form";
 
 export default function CategoriesPage() {
   return (
@@ -33,7 +34,8 @@ export default function CategoriesPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <PlaceholderContent />
+      {/* <PlaceholderContent /> */}
+      <TradePanel/>
     </ContentLayout>
   );
 }

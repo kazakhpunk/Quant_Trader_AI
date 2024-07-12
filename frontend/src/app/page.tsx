@@ -55,7 +55,7 @@ export default function HomePage() {
               </Button>
               <Button variant="outline" asChild>
                 <Link
-                  href="https://ui.shadcn.com/"
+                  href="https://www.instagram.com/nursultansagyntay/"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -66,7 +66,7 @@ export default function HomePage() {
           </section>
           <div className="w-full flex justify-center relative">
             <Image
-              src="/demo-light-min.png"
+              src="/mac-light.png"
               width={1080}
               height={608}
               alt="demo"
@@ -74,7 +74,7 @@ export default function HomePage() {
               className="border rounded-xl shadow-sm dark:hidden"
             />
             <Image
-              src="/demo-dark-min.png"
+              src="/mac-dark.png"
               width={1080}
               height={608}
               alt="demo-dark"
@@ -82,14 +82,14 @@ export default function HomePage() {
               className="border border-zinc-600 rounded-xl shadow-sm hidden dark:block dark:shadow-gray-500/5"
             />
             <Image
-              src="/demo-mobile-light-min.png"
+              src="/phone-light.png"
               width={228}
               height={494}
               alt="demo-mobile"
               className="border rounded-xl absolute bottom-0 right-0 hidden lg:block dark:hidden"
             />
             <Image
-              src="/demo-mobile-dark-min.png"
+              src="/phone-dark.png"
               width={228}
               height={494}
               alt="demo-mobile"
