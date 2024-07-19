@@ -1,5 +1,6 @@
-import Link from "next/link";
+"use client";
 
+import Link from "next/link";
 import PlaceholderContent from "@/components/v2/placeholder-content";
 import { ContentLayout } from "@/components/admin-panel/content-layout";
 import {
@@ -10,7 +11,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
-import { FundamentalChart } from "@/components/v2/fundamental-chart";
+import FundamentalAnalysis from "@/components/v2/fundamental-display";
 
 export default function NewPostPage() {
   return (
@@ -40,8 +41,9 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <PlaceholderContent />
+      {/* <PlaceholderContent /> */}
       {/* <FundamentalChart /> */}
+      <FundamentalAnalysis/>
     </ContentLayout>
   );
 }
