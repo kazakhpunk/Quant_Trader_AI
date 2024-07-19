@@ -78,7 +78,7 @@ export default function FundamentalAnalysis() {
             <CardHeader className="flex items-center gap-5 space-y-0 border-b py-5 sm:flex-row">
                 <div className="grid flex-1 gap-1 text-center sm:text-left">
                     <CardTitle className="text-2xl">Fundamental Analysis - {selectedTicker}</CardTitle>
-                    <CardDescription>Company's financial health</CardDescription>
+                    <CardDescription>Company&#39;s financial health</CardDescription>
                 </div>
                 <Combobox onSelectTicker={setSelectedTicker}/>
             </CardHeader>
