@@ -35,7 +35,7 @@ class AuthController {
       const tokenData = await this.authService.getAccessToken(code as string);
       console.log("Token data received:", tokenData);
 
-      res.redirect(`http://localhost:3000/trade?access_token=${tokenData.access_token}`);
+      res.redirect(`https://quant-trader-ai-d1e6-v3.vercel.app/trade?access_token=${tokenData.access_token}`);
     } catch (error: any) {
       console.error("Failed to authenticate:", error.message);
       res.status(500).send('Failed to authenticate');
