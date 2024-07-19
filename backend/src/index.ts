@@ -4,6 +4,7 @@ import { MongoClient, Db } from 'mongodb';
 import { logger } from './logger';
 import createTechnicalRouter from './analysis/analysis-router';
 import createTradeRouter from './trade/trade-router';
+import createAuthRouter from './auth/auth-router';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 
@@ -47,6 +48,9 @@ const startServer = async () => {
     app.use('/api/v1/', technicalRouter);
     const tradeRouter = await createTradeRouter(db);
     app.use('/api/v1/', tradeRouter);
+
+    const authRouter = await createAuthRouter(db);
+    app.use('/api/', authRouter);
 
     app.listen(PORT, () => {
       console.log(`Server runs at http://localhost:${PORT}`);
