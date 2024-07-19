@@ -30,7 +30,7 @@ export default function CategoriesPage() {
         const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
 
         try {
-          const response = await fetch('http://localhost:8000/api/oauth/store_token', {
+          const response = await fetch('https://quanttraderai-production.up.railway.app/api/oauth/store_token', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

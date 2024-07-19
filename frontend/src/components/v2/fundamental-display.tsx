@@ -50,7 +50,7 @@ export default function FundamentalAnalysis() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/postFundamentalData/${ticker}`, {
+      const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/postFundamentalData/${ticker}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

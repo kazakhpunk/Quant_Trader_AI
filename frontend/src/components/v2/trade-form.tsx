@@ -25,7 +25,7 @@ export function TradePanel() {
     try {
       const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
 
-      const tradeResponse = await fetch(`http://localhost:8000/api/v1/trade/`, {
+      const tradeResponse = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/trade/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

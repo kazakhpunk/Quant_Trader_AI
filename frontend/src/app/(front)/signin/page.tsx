@@ -9,7 +9,7 @@ const SignInPage = () => {
 
   useEffect(() => {
     if (session) {
-      window.location.href = `http://localhost:8000/api/oauth/authorize`;
+      window.location.href = `https://quanttraderai-production.up.railway.app/api/oauth/authorize`;
     }
   }, [session]);
 
