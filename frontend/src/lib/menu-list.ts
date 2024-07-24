@@ -67,12 +67,12 @@ export function getMenuList(pathname: string): Group[] {
           active: pathname.includes("/analysis"),
           icon: Brain,
           submenus: [
-            {
-              href: "/analysis",
-              label: "Overview",
-              icon: HomeIcon,
-              active: pathname === "/analysis"
-            },
+            // {
+            //   href: "/analysis",
+            //   label: "Overview",
+            //   icon: HomeIcon,
+            //   active: pathname === "/analysis"
+            // },
             {
               href: "/analysis/price",
               label: "Price Changes",
