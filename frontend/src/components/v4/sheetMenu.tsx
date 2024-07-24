@@ -46,7 +46,7 @@ export function Settings({ isLiveTrading, setIsLiveTrading, isPaperTrading, setI
             <SheetDescription>
                 Make changes to set trading indicators.
                 Highly recommended to always use at least Technical Analysis. 
-                Click save when you're done.
+                Click save when you&apos;re done.
             </SheetDescription>
             </SheetHeader>
             <div className="flex flex-col gap-4 py-4">
