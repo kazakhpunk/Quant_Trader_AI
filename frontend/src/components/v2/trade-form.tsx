@@ -7,12 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"; 
 import { useUser } from "@clerk/nextjs";
 
+import { Settings } from "../v4/sheetMenu"
+import { Sheet } from "lucide-react";
+
 export function TradePanel() {
   const [showPanel, setPanel] = useState(true);
   const [allocation, setAllocation] = useState(50);
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLiveTrading, setIsLiveTrading] = useState(true);
+  const [isPaperTrading, setIsPaperTrading] = useState(false);
+  const [isSentimentEnabled, setIsSentimentEnabled] = useState(true);
   const { user } = useUser();
 
   const handlePurchase = async () => {
@@ -30,7 +36,12 @@ export function TradePanel() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ amount: allocation, email })
+        body: JSON.stringify({
+          amount: allocation,
+          email,
+          isLiveTrading,
+          isSentimentEnabled,
+        }),
       });
 
       const responseData = await tradeResponse.json();
@@ -60,15 +71,25 @@ export function TradePanel() {
 
   return (
     <div className="flex justify-center items-center w-full mt-20">
-      <Card className="w-full max-w-2xl mt-2 ml-6">
-        <CardHeader className="grid gap-2">
-          <CardTitle>Purchase Stocks</CardTitle>
-          <CardDescription>
-            Use the slider to select the amount you want to allocate for your stock purchase.
-          </CardDescription>
-        </CardHeader>
+      <Card className="w-full max-w-5xl mt-2 ml-6 p-2 py-4">
+        <div className="flex flex-row justify-between">
+            <CardHeader className="grid gap-2">
+              <CardTitle>Purchase Stocks</CardTitle>
+              <CardDescription>
+                Use the slider to select the amount you want to allocate for your stock purchase.
+              </CardDescription>
+            </CardHeader>
+            <Settings
+              isLiveTrading={isLiveTrading}
+              setIsLiveTrading={setIsLiveTrading}
+              isPaperTrading={isPaperTrading}
+              setIsPaperTrading={setIsPaperTrading}
+              isSentimentEnabled={isSentimentEnabled}
+              setIsSentimentEnabled={setIsSentimentEnabled}
+            />
+        </div>
         <CardContent>
-          <div className="grid gap-4">
+          <div className="grid">
           {successMessage && (
               <Alert variant="default">
                 <AlertTitle>Success</AlertTitle>
@@ -97,13 +118,13 @@ export function TradePanel() {
               min={0} 
               max={100} 
               step={1} 
-              className="w-full" 
+              className="w-full my-4" 
             />
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Allocation Amount</span>
               <span className="font-medium">${allocation.toFixed(2)}</span>
             </div>
-            <Button className="w-full" onClick={handlePurchase} disabled={loading}>
+            <Button className="w-full mt-8" onClick={handlePurchase} disabled={loading}>
               {loading ? 'Processing...' : 'Purchase'}
             </Button>
           </div>

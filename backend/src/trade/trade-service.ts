@@ -8,28 +8,41 @@ import { WithId, Document } from 'mongodb';
 import Bottleneck from 'bottleneck';
 
 class TradeService {
-  private alpaca: any;
+  private alpacaLive: any;
+  private alpacaPaper: any;
   private analysisService: AnalysisService;
   private db: Db;
   private limiter: Bottleneck;
 
   constructor(db: Db) {
-    this.alpaca = new Alpaca({
+    this.alpacaLive = new Alpaca({
+      keyId: process.env.LIVE_API_KEY,
+      secretKey: process.env.LIVE_SECRET_KEY,
+      paper: false
+    });
+
+    this.alpacaPaper = new Alpaca({
       keyId: process.env.PAPER_API_KEY,
       secretKey: process.env.PAPER_SECRET_KEY,
-      paper: true 
+      paper: true
     });
+
     this.db = db;
-    this.analysisService = new AnalysisService(db); 
+    this.analysisService = new AnalysisService(db);
     this.limiter = new Bottleneck({
       minTime: 1000, // 1 second between each request
       maxConcurrent: 1 // Only one request at a time
     });
   }
 
-  public async getLatestPrice(symbol: string): Promise<number> {
+  private getAlpacaInstance(isLive: boolean) {
+    return isLive ? this.alpacaLive : this.alpacaPaper;
+  }
+
+  public async getLatestPrice(symbol: string, isLive: boolean): Promise<number> {
     try {
-      const response = await this.alpaca.getLatestTrade(symbol);
+      const alpaca = this.getAlpacaInstance(isLive);
+      const response = await alpaca.getLatestTrade(symbol);
       const price = response.Price;
 
       if (!price) throw new Error(`Price not found for symbol: ${symbol}`);
@@ -40,12 +53,13 @@ class TradeService {
     }
   }
 
-  private async placeSimpleOrder(symbol: string, quantity: number, isLong: boolean): Promise<void> {
+  private async placeSimpleOrder(symbol: string, quantity: number, isLong: boolean, isLive: boolean): Promise<void> {
     try {
+      const alpaca = this.getAlpacaInstance(isLive);
       const side = isLong ? 'buy' : 'sell';
       const timeInForce = 'day'; // Ensure 'day' for fractional shares
 
-      await this.alpaca.createOrder({
+      await alpaca.createOrder({
         symbol,
         qty: quantity,
         side: side,
@@ -61,11 +75,12 @@ class TradeService {
 
   public async monitorAndManagePositions(): Promise<void> {
     try {
-      const positions = await this.alpaca.getPositions();
+      const alpaca = this.alpacaLive; // Assuming monitoring is only for live positions
+      const positions = await alpaca.getPositions();
       
       for (const position of positions) {
         const { symbol, qty, avg_entry_price, side } = position;
-        const latestPrice = await this.getLatestPrice(symbol);
+        const latestPrice = await this.getLatestPrice(symbol, true);
 
         const stopLossThreshold = 0.99; // Example: 1% below entry price
         const takeProfitThreshold = 1.03; // Example: 3% above entry price
@@ -74,7 +89,7 @@ class TradeService {
         const takeProfitPrice = parseFloat(avg_entry_price) * takeProfitThreshold;
 
         if (latestPrice <= stopLossPrice) {
-          await this.limiter.schedule(() => this.alpaca.createOrder({
+          await this.limiter.schedule(() => alpaca.createOrder({
             symbol,
             qty,
             side: 'sell',
@@ -85,7 +100,7 @@ class TradeService {
         }
 
         if (latestPrice >= takeProfitPrice) {
-          await this.limiter.schedule(() => this.alpaca.createOrder({
+          await this.limiter.schedule(() => alpaca.createOrder({
             symbol,
             qty,
             side: 'sell',
@@ -100,7 +115,7 @@ class TradeService {
     }
   }
 
-  public async executeTrades(amount: string): Promise<{ longCandidates: any[]; shortCandidates: any[]; }> {
+  public async executeTrades(amount: string, isLiveTrading: boolean, isSentimentEnabled: boolean): Promise<{ longCandidates: any[]; shortCandidates: any[]; }> {
     const { longCandidates, shortCandidates } = await this.analysisService.getCandidatesFromDB();
     console.log('Long candidates:', longCandidates);
     console.log('Short candidates:', shortCandidates);
@@ -112,17 +127,18 @@ class TradeService {
 
     const tradeCandidates = async (candidates: Stock[], allocation: number, isLong: boolean) => {
       for (const candidate of candidates) {
-        if (candidate.sentiment ?? 1 > 0.5) {
-        const symbol = candidate.ticker;
-        const price = await this.getLatestPrice(symbol);
-        const quantity = parseFloat((allocation / price).toFixed(2));
+        if (!isSentimentEnabled || (candidate.sentiment ?? 1) > 0.5) {
+          const symbol = candidate.ticker;
+          const price = await this.getLatestPrice(symbol, isLiveTrading);
+          const quantity = parseFloat((allocation / price).toFixed(2));
 
-        await this.placeSimpleOrder(symbol, quantity, isLong);
-      }
+          await this.placeSimpleOrder(symbol, quantity, isLong, isLiveTrading);
+        }
       }
     };
 
     await tradeCandidates(longCandidates, longAllocation, true);
+    await tradeCandidates(shortCandidates, shortAllocation, false);
 
     await this.startMonitoringCronJob();
 
@@ -131,7 +147,7 @@ class TradeService {
 
   public async checkLongStatus() {
     try {
-      const positions = await this.alpaca.getPositions();
+      const positions = await this.alpacaLive.getPositions();
       const relevantPositions = positions.map(position => ({
         symbol: position.symbol,
         qty: position.qty,
@@ -190,7 +206,7 @@ class TradeService {
   }
 
   public async isMarketOpen() {
-    const clock = await this.alpaca.getClock();
+    const clock = await this.alpacaLive.getClock();
     return clock.is_open;
   }
 }
