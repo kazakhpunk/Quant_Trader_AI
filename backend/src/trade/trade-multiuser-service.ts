@@ -5,14 +5,29 @@ import { Stock } from '../analysis/types/analysisModel';
 import { Db } from 'mongodb';
 import cron from 'node-cron';
 import Bottleneck from 'bottleneck';
+import Alpaca from '@alpacahq/alpaca-trade-api';
 
 class TradeService {
+  private alpacaLive: any;
+  private alpacaPaper: any;
   private analysisService: AnalysisService;
   private db: Db;
   private limiter: Bottleneck;
   private authService: any;
 
   constructor(db: Db) {
+    this.alpacaLive = new Alpaca({
+      keyId: process.env.LIVE_API_KEY,
+      secretKey: process.env.LIVE_SECRET_KEY,
+      paper: false
+    });
+
+    this.alpacaPaper = new Alpaca({
+      keyId: process.env.PAPER_API_KEY,
+      secretKey: process.env.PAPER_SECRET_KEY,
+      paper: true
+    });
+
     this.db = db;
     this.authService = new AuthService(db);
     this.analysisService = new AnalysisService(db); 
@@ -20,6 +35,10 @@ class TradeService {
       minTime: 1000, // 1 second between each request
       maxConcurrent: 1 // Only one request at a time
     });
+  }
+
+  private getAlpacaInstance(isLive: boolean) {
+    return isLive ? this.alpacaLive : this.alpacaPaper;
   }
 
   private async getAccessToken(email: string): Promise<string | null> {
@@ -32,37 +51,41 @@ class TradeService {
     }
   }
 
-  private async checkAccountBalance(email: string, amount: number): Promise<void> {
+  private async checkAccountBalance(email: string, amount: number, isLive: boolean): Promise<void> {
     const accessToken = await this.getAccessToken(email);
     if (!accessToken) throw new Error('Access token is missing');
 
-    const response = await axios.get('https://api.alpaca.markets/v2/account', {
+    const alpaca = this.getAlpacaInstance(isLive);
+
+    const response = await alpaca.getAccount({
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     });
 
-    const accountBalance = response.data.cash;
+    const accountBalance = response.cash;
 
     if (parseFloat(accountBalance) < amount) {
       throw new Error('Insufficient balance. Please deposit more funds.');
     }
   }
 
-  public async getLatestPrice(symbol: string, email: string): Promise<number> {
+  public async getLatestPrice(symbol: string, email: string, isLive: boolean): Promise<number> {
     try {
       const accessToken = await this.getAccessToken(email);
       if (!accessToken) throw new Error('Access token is missing');
 
-      const response = await axios.get(`https://data.alpaca.markets/v2/stocks/${symbol}/trades/latest`, {
+      const alpaca = this.getAlpacaInstance(isLive);
+
+      const response = await alpaca.getLatestTrade(symbol, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
         }
       });
 
-      const price = response.data.trade?.p;
+      const price = response.price;
       if (!price) throw new Error(`Price not found for symbol: ${symbol}`);
       return price;
     } catch (error) {
@@ -71,21 +94,22 @@ class TradeService {
     }
   }
 
-  private async placeSimpleOrder(symbol: string, quantity: number, isLong: boolean, email: string): Promise<void> {
+  private async placeSimpleOrder(symbol: string, quantity: number, isLong: boolean, email: string, isLive: boolean): Promise<void> {
     try {
       const accessToken = await this.getAccessToken(email);
       if (!accessToken) throw new Error('Access token is missing');
 
+      const alpaca = this.getAlpacaInstance(isLive);
+
       const side = isLong ? 'buy' : 'sell';
       const timeInForce = 'day'; // Ensure 'day' for fractional shares
 
-      await axios.post('https://api.alpaca.markets/v2/orders', {
+      await alpaca.createOrder({
         symbol,
         qty: quantity,
         side: side,
         type: 'market',
-        time_in_force: timeInForce
-      }, {
+        time_in_force: timeInForce,
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
@@ -98,12 +122,14 @@ class TradeService {
     }
   }
 
-  public async monitorAndManagePositions(email: string): Promise<void> {
+  public async monitorAndManagePositions(email: string, isLive: boolean): Promise<void> {
     try {
       const accessToken = await this.getAccessToken(email);
       if (!accessToken) throw new Error('Access token is missing');
 
-      const response = await axios.get('https://api.alpaca.markets/v2/positions', {
+      const alpaca = this.getAlpacaInstance(isLive);
+
+      const response = await alpaca.getPositions({
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
@@ -114,7 +140,7 @@ class TradeService {
 
       for (const position of positions) {
         const { symbol, qty, avg_entry_price, side } = position;
-        const latestPrice = await this.getLatestPrice(symbol, email);
+        const latestPrice = await this.getLatestPrice(symbol, email, isLive);
 
         const stopLossThreshold = 0.99; // Example: 1% below entry price
         const takeProfitThreshold = 1.03; // Example: 3% above entry price
@@ -123,13 +149,12 @@ class TradeService {
         const takeProfitPrice = parseFloat(avg_entry_price) * takeProfitThreshold;
 
         if (latestPrice <= stopLossPrice) {
-          await this.limiter.schedule(() => axios.post('https://api.alpaca.markets/v2/orders', {
+          await this.limiter.schedule(() => alpaca.createOrder({
             symbol,
             qty,
             side: 'sell',
             type: 'market',
-            time_in_force: 'day'
-          }, {
+            time_in_force: 'day',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json'
@@ -139,13 +164,12 @@ class TradeService {
         }
 
         if (latestPrice >= takeProfitPrice) {
-          await this.limiter.schedule(() => axios.post('https://api.alpaca.markets/v2/orders', {
+          await this.limiter.schedule(() => alpaca.createOrder({
             symbol,
             qty,
             side: 'sell',
             type: 'market',
-            time_in_force: 'day'
-          }, {
+            time_in_force: 'day',
             headers: {
               'Authorization': `Bearer ${accessToken}`,
               'Content-Type': 'application/json'
@@ -159,8 +183,8 @@ class TradeService {
     }
   }
 
-  public async executeTrades(amount: string, email: string): Promise<{ longCandidates: any[]; shortCandidates: any[]; }> {
-    await this.checkAccountBalance(email, parseFloat(amount)); // Check account balance before trading
+  public async executeTrades(amount: string, email: string, isLiveTrading: boolean, isSentimentEnabled: boolean): Promise<{ longCandidates: any[]; shortCandidates: any[]; }> {
+    await this.checkAccountBalance(email, parseFloat(amount), isLiveTrading); // Check account balance before trading
     const { longCandidates, shortCandidates } = await this.analysisService.getCandidatesFromDB();
     console.log('Long candidates:', longCandidates);
     console.log('Short candidates:', shortCandidates);
@@ -172,29 +196,32 @@ class TradeService {
 
     const tradeCandidates = async (candidates: Stock[], allocation: number, isLong: boolean) => {
       for (const candidate of candidates) {
-        if (candidate.sentiment ?? 1 > 0.5) {
-        const symbol = candidate.ticker;
-        const price = await this.getLatestPrice(symbol, email);
-        const quantity = parseFloat((allocation / price).toFixed(2));
+        if (!isSentimentEnabled || (candidate.sentiment ?? 1) > 0.5) {
+          const symbol = candidate.ticker;
+          const price = await this.getLatestPrice(symbol, email, isLiveTrading);
+          const quantity = parseFloat((allocation / price).toFixed(2));
 
-        await this.placeSimpleOrder(symbol, quantity, isLong, email);
-      }
+          await this.placeSimpleOrder(symbol, quantity, isLong, email, isLiveTrading);
+        }
       }
     };
 
     await tradeCandidates(longCandidates, longAllocation, true);
+    await tradeCandidates(shortCandidates, shortAllocation, false);
 
-    await this.startMonitoringCronJob(email);
+    await this.startMonitoringCronJob(email, isLiveTrading);
 
     return { longCandidates, shortCandidates };
   }
 
-  public async checkLongStatus(email: string) {
+  public async checkLongStatus(email: string, isLive: boolean) {
     try {
       const accessToken = await this.getAccessToken(email);
       if (!accessToken) throw new Error('Access token is missing');
 
-      const response = await axios.get('https://api.alpaca.markets/v2/positions', {
+      const alpaca = this.getAlpacaInstance(isLive);
+
+      const response = await alpaca.getPositions({
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
@@ -219,10 +246,10 @@ class TradeService {
     }
   }  
   
-  public async startMonitoringCronJob(email: string) {
+  public async startMonitoringCronJob(email: string, isLive: boolean) {
     console.log('Running a task every 10 minutes to check long status');
     try {
-      await this.monitorAndManagePositions(email);
+      await this.monitorAndManagePositions(email, isLive);
     } 
     catch (error) {
     console.error('Error during cron job:', error);
@@ -230,7 +257,7 @@ class TradeService {
     cron.schedule('*/10 * * * *', async () => {
       console.log('Running a task every 10 minutes to check long status');
       try {
-          await this.monitorAndManagePositions(email);
+          await this.monitorAndManagePositions(email, isLive);
           console.log('Task completed');
         } 
        catch (error) {
@@ -259,11 +286,13 @@ class TradeService {
     });
   }
 
-  public async isMarketOpen(email: string) {
+  public async isMarketOpen(email: string, isLive: boolean) {
     const accessToken = await this.getAccessToken(email);
     if (!accessToken) throw new Error('Access token is missing');
 
-    const response = await axios.get('https://api.alpaca.markets/v2/clock', {
+    const alpaca = this.getAlpacaInstance(isLive);
+
+    const response = await alpaca.getClock({
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'

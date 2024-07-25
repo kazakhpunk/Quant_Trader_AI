@@ -15,7 +15,10 @@ const SignUpPage = () => {
 
   return (
     <div className="flex pt-36 justify-center min-h-screen">
-      <SignUp routing="hash" forceRedirectUrl="/signup" />
+      <SignUp 
+        routing="hash" 
+        forceRedirectUrl="/signup" 
+        signInUrl="https://quant-trader-ai-v4.vercel.app/signin"/>
     </div>
   );
 };

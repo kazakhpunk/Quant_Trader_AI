@@ -16,8 +16,8 @@ class TradeController {
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
     try {
-      const { amount, email } = req.body;
-      await this.tradeService.executeTrades(amount, email);
+      const { amount, email, isLiveTrading, isSentimentEnabled } = req.body;
+      await this.tradeService.executeTrades(amount, email, isLiveTrading, isSentimentEnabled);
       res.status(200).json({ message: 'Trades executed successfully' });
     } catch (error: any) {
       console.error('Error executing trades:', error);
@@ -27,8 +27,8 @@ class TradeController {
 
   public async getLatestPrice(req: Request, res: Response): Promise<void> {
     try {
-      const { ticker, email } = req.body;
-      const price = await this.tradeService.getLatestPrice(ticker, email);
+      const { ticker, email, isLiveTrading } = req.body;
+      const price = await this.tradeService.getLatestPrice(ticker, email, isLiveTrading);
       res.status(200).json({ price });
     } catch (error: any) {
       console.error('Error fetching latest price:', error);
@@ -38,8 +38,8 @@ class TradeController {
 
   public async startMonitoringCronJob(req: Request, res: Response): Promise<void> {
     try {
-      const { email } = req.body;
-      await this.tradeService.startMonitoringCronJob(email);
+      const { email, isLiveTrading } = req.body;
+      await this.tradeService.startMonitoringCronJob(email, isLiveTrading);
       res.status(200).json({ message: 'Cron Job started successfully' });
     } catch (error: any) {
       console.error('Error starting cron job:', error);
@@ -59,8 +59,8 @@ class TradeController {
 
   public async isMarketOpen(req: Request, res: Response): Promise<void> {
     try {
-      const { email } = req.body;
-      const isOpen = await this.tradeService.isMarketOpen(email);
+      const { email, isLiveTrading } = req.body;
+      const isOpen = await this.tradeService.isMarketOpen(email, isLiveTrading);
       res.json({ market_is_open: isOpen });
     } catch (error: any) {
       console.error('Error checking market status:', error);
