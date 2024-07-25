@@ -4,6 +4,7 @@ import * as React from "react";
 import { Combobox } from "./combobox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { getApiUrl } from "@/lib/utils";
 
 interface IndicatorCardProps {
   title: string;
@@ -50,7 +51,7 @@ export default function FundamentalAnalysis() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/postFundamentalData/${ticker}`, {
+      const response = await fetch(`${getApiUrl()}/api/v1/postFundamentalData/${ticker}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

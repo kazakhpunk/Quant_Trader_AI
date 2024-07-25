@@ -15,6 +15,7 @@ import LoginPrompt from "@/components/v3/login-prompt";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import { getApiUrl } from "@/lib/utils";
 
 export default function CategoriesPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export default function CategoriesPage() {
         const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
 
         try {
-          const response = await fetch('https://quanttraderai-production.up.railway.app/api/oauth/store_token', {
+          const response = await fetch(`${getApiUrl()}/api/oauth/store_token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'

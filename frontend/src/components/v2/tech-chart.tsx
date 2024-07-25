@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select"
 import { Combobox } from "./combobox"
 import { ValueType, NameType } from 'recharts/types/component/DefaultTooltipContent' 
+import { getApiUrl } from "@/lib/utils"
 
 const chartConfig = {
     rsi14: {
@@ -62,7 +63,7 @@ export default function TechnicalCharts() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/getIntervalSMAData?ticker=${ticker}&scale=${timeRange}`, {
+        const response = await fetch(`${getApiUrl()}/api/v1/getIntervalSMAData?ticker=${ticker}&scale=${timeRange}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -86,7 +87,7 @@ export default function TechnicalCharts() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/getIntervalEMAData?ticker=${ticker}&scale=${timeRange}`, {
+        const response = await fetch(`${getApiUrl()}/api/v1/getIntervalEMAData?ticker=${ticker}&scale=${timeRange}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -110,7 +111,7 @@ export default function TechnicalCharts() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/getIntervalRSIData?ticker=${ticker}&scale=${timeRange}`, {
+        const response = await fetch(`${getApiUrl()}/api/v1/getIntervalRSIData?ticker=${ticker}&scale=${timeRange}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'

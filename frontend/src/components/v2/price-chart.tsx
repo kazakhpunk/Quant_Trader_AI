@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Combobox } from "./combobox"
+import { getApiUrl } from "@/lib/utils"
 
 const initialData: any[] = [];
 const chartConfig = {
@@ -51,7 +52,7 @@ export default function PriceChart() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/fetchIntervalHistoricalData?ticker=${ticker}&scale=${timeRange}`, {
+        const response = await fetch(`${getApiUrl()}/api/v1/fetchIntervalHistoricalData?ticker=${ticker}&scale=${timeRange}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

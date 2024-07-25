@@ -18,6 +18,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { Combobox } from "./combobox"
+import { getApiUrl } from "@/lib/utils"
 
 const chartConfig = {
   score: {
@@ -35,7 +36,7 @@ export function SentimentChart() {
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/analyzeSentiment/${ticker}`)
+      const response = await fetch(`${getApiUrl()}/api/v1/analyzeSentiment/${ticker}`)
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`)
       }

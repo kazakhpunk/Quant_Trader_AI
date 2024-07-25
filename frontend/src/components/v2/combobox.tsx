@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { cn, getApiUrl } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -34,7 +34,7 @@ export function Combobox({onSelectTicker}: ComboboxProps){
     setLoading(true)
     setError(null)
     try {
-      const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/tickers`, {
+      const response = await fetch(`${getApiUrl()}/api/v1/tickers`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'

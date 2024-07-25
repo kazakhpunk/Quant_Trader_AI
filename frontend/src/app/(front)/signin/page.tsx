@@ -3,13 +3,14 @@
 
 import { useEffect } from "react";
 import { SignIn, useSession } from "@clerk/nextjs";
+import { getApiUrl } from "@/lib/utils";
 
 const SignInPage = () => {
   const { session } = useSession();
 
   useEffect(() => {
     if (session) {
-      window.location.href = `https://quanttraderai-production.up.railway.app/api/oauth/authorize`;
+      window.location.href = `${getApiUrl()}/api/oauth/authorize`;
     }
   }, [session]);
 

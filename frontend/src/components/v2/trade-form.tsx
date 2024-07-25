@@ -9,6 +9,7 @@ import { useUser } from "@clerk/nextjs";
 
 import { Settings } from "../v4/sheetMenu"
 import { Sheet } from "lucide-react";
+import { getApiUrl } from "@/lib/utils";
 
 export function TradePanel() {
   const [showPanel, setPanel] = useState(true);
@@ -31,7 +32,7 @@ export function TradePanel() {
     try {
       const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
 
-      const tradeResponse = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/trade/`, {
+      const tradeResponse = await fetch(`${getApiUrl()}/api/v1/trade/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -49,7 +50,7 @@ export function TradePanel() {
       if (tradeResponse.status === 200) {
         setSuccessMessage(`Successfully purchased stocks with $${allocation.toFixed(2)} allocation!`);
         setTimeout(() => {
-          setPanel(false);
+          // setPanel(false);
           setSuccessMessage("");
         }, 3000); // Hide panel and clear message after 3 seconds
       } else {

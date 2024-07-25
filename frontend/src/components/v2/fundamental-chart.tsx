@@ -17,6 +17,7 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart";
+import { getApiUrl } from "@/lib/utils";
 
 // Normalization function
 function normalizeData(data: any) {
@@ -79,7 +80,7 @@ export function FundamentalChart({ ticker }: { ticker: string }) {
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`https://quanttraderai-production.up.railway.app/api/v1/getFundamentalData/${ticker}`, {
+            const response = await fetch(`${getApiUrl()}/api/v1/getFundamentalData/${ticker}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'

@@ -17,6 +17,12 @@ class TradeController {
   public async executeTrades(req: Request, res: Response): Promise<void> {
     try {
       const { amount, email, isLiveTrading, isSentimentEnabled } = req.body;
+      console.log('Received request with params:', { amount, email, isLiveTrading, isSentimentEnabled });
+
+      if (!amount || !email) {
+        res.status(400).json({ error: 'Amount and email are required' });
+      }
+
       await this.tradeService.executeTrades(amount, email, isLiveTrading, isSentimentEnabled);
       res.status(200).json({ message: 'Trades executed successfully' });
     } catch (error: any) {
@@ -28,6 +34,11 @@ class TradeController {
   public async getLatestPrice(req: Request, res: Response): Promise<void> {
     try {
       const { ticker, email, isLiveTrading } = req.body;
+      console.log('Received request with params:', { ticker, email, isLiveTrading });
+
+      if (!ticker || !email) {
+        res.status(400).json({ error: 'Symbol and email are required' });
+      }
       const price = await this.tradeService.getLatestPrice(ticker, email, isLiveTrading);
       res.status(200).json({ price });
     } catch (error: any) {
