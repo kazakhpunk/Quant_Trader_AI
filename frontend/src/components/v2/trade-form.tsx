@@ -8,7 +8,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useUser } from "@clerk/nextjs";
 
 import { Settings } from "../v4/sheetMenu"
-import { Sheet } from "lucide-react";
 import { getApiUrl } from "@/lib/utils";
 
 export function TradePanel() {
