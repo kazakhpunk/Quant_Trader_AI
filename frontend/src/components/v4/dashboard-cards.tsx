@@ -36,7 +36,7 @@ interface DashboardData {
 }
 
 const getApiUrl = () => {
-  return process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://your-production-url.com';
+  return process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://quanttraderai-production.up.railway.app';
 };
 
 const fetchDashboardData = async (token: string): Promise<DashboardData | null> => {
