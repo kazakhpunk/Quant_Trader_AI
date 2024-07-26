@@ -12,7 +12,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { useState } from "react"
 
 export function Settings({ isLiveTrading, setIsLiveTrading, isPaperTrading, setIsPaperTrading, isSentimentEnabled, setIsSentimentEnabled }: any) {
     function handleLiveChange(checked: any) {
