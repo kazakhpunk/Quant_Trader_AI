@@ -55,7 +55,7 @@ export default function HomePage() {
               </Button>
               <Button variant="outline" asChild>
                 <Link
-                  href="https://www.instagram.com/nursultansagyntay/"
+                  href="https://www.instagram.com/qtrader.ai/"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
