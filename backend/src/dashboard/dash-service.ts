@@ -1,7 +1,9 @@
-import axios from 'axios';
+import axios from "axios";
 
 const getAlpacaApiUrl = (isLive: boolean) =>
-  isLive ? 'https://api.alpaca.markets/v2' : 'https://paper-api.alpaca.markets/v2';
+  isLive
+    ? "https://api.alpaca.markets/v2"
+    : "https://paper-api.alpaca.markets/v2";
 
 const getAlpacaHeaders = (token: string) => ({
   Authorization: `Bearer ${token}`,

@@ -16,6 +16,7 @@
   "dependencies": {
     "@alpacahq/alpaca-trade-api": "^3.0.1",
     "@supercharge/promise-pool": "^3.2.0",
+    "@upstash/qstash": "^2.6.2",
     "axios": "^1.7.2",
     "bottleneck": "^2.19.5",
     "cheerio": "^1.0.0-rc.12",
