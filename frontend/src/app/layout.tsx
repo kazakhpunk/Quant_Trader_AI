@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
-import { Analytics } from "@vercel/analytics/react";
 
 import "./globals.css";
 
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@/components/analytics";
 
 export const metadata: Metadata = {
   title: "Quant Trader AI",
