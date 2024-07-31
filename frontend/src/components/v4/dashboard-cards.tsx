@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '../ui/card';
+import React, { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader } from "../ui/card";
 
 interface AccountData {
   portfolio_value: number;
@@ -36,16 +36,20 @@ interface DashboardData {
 }
 
 const getApiUrl = () => {
-  return process.env.NODE_ENV === 'development' ? 'http://localhost:8000' : 'https://quanttraderai-production.up.railway.app';
+  return process.env.NODE_ENV === "development"
+    ? "http://localhost:8000"
+    : "https://quanttraderai-production.up.railway.app";
 };
 
-const fetchDashboardData = async (token: string): Promise<DashboardData | null> => {
+const fetchDashboardData = async (
+  token: string
+): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${getApiUrl()}/api/v4/dashboard-data`, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         isLive: false,
@@ -53,14 +57,14 @@ const fetchDashboardData = async (token: string): Promise<DashboardData | null> 
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch dashboard data');
+      throw new Error("Failed to fetch dashboard data");
     }
 
     const data = await response.json();
-    console.log('Dashboard data:', data);
+    console.log("Dashboard data:", data);
     return data;
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error("Error fetching dashboard data:", error);
     return null;
   }
 };
@@ -70,10 +74,10 @@ const Dashboard = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      const token = localStorage.getItem('alpaca_access_token'); // Replace with actual token logic
+      const token = localStorage.getItem("alpaca_access_token"); // Replace with actual token logic
 
       if (!token) {
-        console.error('No token found');
+        console.error("No token found");
         return;
       }
       const dashboardData = await fetchDashboardData(token);
@@ -84,7 +88,12 @@ const Dashboard = () => {
   }, []);
 
   if (!data) {
-    return <div>Loading...</div>;
+    return (
+      <div className="mt-5 flex justify-center">
+        Please, check Analysis and Trade pages. Dashboard page load after first
+        trade!
+      </div>
+    );
   }
 
   return (
