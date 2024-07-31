@@ -333,7 +333,7 @@ class TradeService {
     });
   }
 
-  public async startQstash(email: string, isLive: boolean) {
+  public async startQstash(email: string, isLiveTrading: boolean) {
     try {
       const apiUrl = "https://quanttraderai-production.up.railway.app";
 
@@ -342,7 +342,7 @@ class TradeService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, isLive }),
+        body: JSON.stringify({ email, isLiveTrading }),
         cron: "0 * * * *", // Run every hour
       });
 
@@ -397,7 +397,6 @@ class TradeService {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "analyze" }),
       });
 
       console.log(
