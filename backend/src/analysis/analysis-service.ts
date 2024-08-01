@@ -356,18 +356,6 @@ class AnalysisService {
     const profitMargin = data.financialData.profitMargins;
     const freeCashFlow = data.financialData.freeCashflow;
 
-    if (
-      isNaN(peRatio) ||
-      isNaN(pegRatio) ||
-      isNaN(dividendYield) ||
-      isNaN(payoutRatio) ||
-      isNaN(revenue) ||
-      isNaN(profitMargin) ||
-      isNaN(freeCashFlow)
-    ) {
-      throw new Error(`Invalid calculated values for ticker ${ticker}`);
-    }
-
     await this.db.collection("fundamentalData").updateOne(
       { ticker },
       {
@@ -501,16 +489,6 @@ class AnalysisService {
     const ema50 = this.calculateEMA(closePrices, 50); // 50-day EMA
     const ema20 = this.calculateEMA(closePrices, 20); // 20-day EMA
     const rsi14 = this.calculateRSI(closePrices, 14); // 14-day RSI
-
-    if (
-      isNaN(sma50) ||
-      isNaN(sma20) ||
-      isNaN(ema50) ||
-      isNaN(ema20) ||
-      isNaN(rsi14)
-    ) {
-      throw new Error(`Invalid calculated values for ticker ${ticker}`);
-    }
 
     await this.db
       .collection("technicalData")

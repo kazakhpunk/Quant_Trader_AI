@@ -57,7 +57,7 @@ export default function CategoriesPage() {
           console.log("Stored token:", storedToken);
         } else {
           console.error("No token found in URL or local storage");
-          window.location.href = `${getApiUrl()}/api/oauth/authorize`;
+          // window.location.href = `${getApiUrl()}/api/oauth/authorize`;
         }
       }
     };
