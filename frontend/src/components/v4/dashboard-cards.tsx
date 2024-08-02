@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader } from "../ui/card";
 import { FaDollarSign, FaChartLine, FaExchangeAlt } from "react-icons/fa";
 import { CircularProgress } from "@mui/material";
 import Link from "next/link";
+import { useUser } from "@clerk/clerk-react";
 
 interface AccountData {
   portfolio_value: number;
@@ -75,6 +76,7 @@ const fetchDashboardData = async (
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { isSignedIn, user } = useUser();
 
   useEffect(() => {
     const loadData = async () => {
@@ -82,6 +84,7 @@ const Dashboard = () => {
       if (!token) {
         console.error("No token found");
         setLoading(false);
+        setData(null);
         return;
       }
       const dashboardData = await fetchDashboardData(token);
@@ -100,7 +103,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!data) {
+  if (!data || !isSignedIn) {
     return (
       <div className="flex justify-center min-h-screen mt-8 text-lg">
         {" "}
