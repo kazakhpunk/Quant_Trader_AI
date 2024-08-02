@@ -60,6 +60,7 @@ export function TradePanel() {
             2
           )} allocation!`
         );
+        setErrorMessage("");
         setTimeout(() => {
           // setPanel(false);
           setSuccessMessage("");
@@ -90,15 +91,16 @@ export function TradePanel() {
 
   return (
     <div className="flex justify-center items-center w-full mt-20">
-      <Card className="w-full max-w-5xl mt-2 ml-6 p-2 py-4">
-        <div className="flex flex-row justify-between">
-          <CardHeader className="grid gap-2">
-            <CardTitle>Purchase Stocks</CardTitle>
-            <CardDescription>
+      <Card className="w-full max-w-5xl mt-2 md:p-2 md:py-4">
+        <div className="flex flex-col md:flex-row justify-between">
+          <CardHeader className="flex-1 pb-0">
+            <CardTitle className="md:mb-2">Purchase Stocks</CardTitle>
+            <CardDescription className="w-full md:mb-2">
               Use the slider to select the amount you want to allocate for your
               stock purchase.
             </CardDescription>
           </CardHeader>
+          {/* <div className="mt-0 md:ml-6"> */}
           <Settings
             isLiveTrading={isLiveTrading}
             setIsLiveTrading={setIsLiveTrading}
@@ -107,6 +109,7 @@ export function TradePanel() {
             isSentimentEnabled={isSentimentEnabled}
             setIsSentimentEnabled={setIsSentimentEnabled}
           />
+          {/* </div> */}
         </div>
         <CardContent>
           <div className="grid">

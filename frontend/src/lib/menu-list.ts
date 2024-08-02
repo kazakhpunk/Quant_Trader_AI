@@ -112,17 +112,17 @@ export function getMenuList(pathname: string): Group[] {
         },
       ],
     },
-    {
-      groupLabel: "Settings",
-      menus: [
-        {
-          href: "/account",
-          label: "Account",
-          active: pathname.includes("/account"),
-          icon: Settings,
-          submenus: [],
-        },
-      ],
-    },
+    // {
+    //   groupLabel: "Settings",
+    //   menus: [
+    //     {
+    //       href: "/account",
+    //       label: "Account",
+    //       active: pathname.includes("/account"),
+    //       icon: Settings,
+    //       submenus: [],
+    //     },
+    //   ],
+    // },
   ];
 }

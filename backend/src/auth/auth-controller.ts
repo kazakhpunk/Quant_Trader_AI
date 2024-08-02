@@ -1,6 +1,6 @@
 // auth-controller.ts
-import { Request, Response } from 'express';
-import AuthService from './auth-service';
+import { Request, Response } from "express";
+import AuthService from "./auth-service";
 
 class AuthController {
   private authService: AuthService;
@@ -18,7 +18,12 @@ class AuthController {
     const state = process.env.STATE!;
     const scope = "account:write trading data";
 
-    const authorizationUrl = this.authService.getAuthorizationUrl(clientId, redirectUri, state, scope);
+    const authorizationUrl = this.authService.getAuthorizationUrl(
+      clientId,
+      redirectUri,
+      state,
+      scope
+    );
     res.redirect(authorizationUrl);
   }
 
@@ -26,7 +31,7 @@ class AuthController {
     const { code, state } = req.query;
 
     if (state !== process.env.STATE) {
-      res.status(400).send('Invalid state');
+      res.status(400).send("Invalid state");
       return;
     }
 
@@ -34,11 +39,18 @@ class AuthController {
       console.log("Authorization code received:", code);
       const tokenData = await this.authService.getAccessToken(code as string);
       console.log("Token data received:", tokenData);
-
-      res.redirect(`https://quant-trader-ai-v4.vercel.app/trade?access_token=${tokenData.access_token}`);
+      if (process.env.NODE_ENV === "development") {
+        res.redirect(
+          `http://localhost:3000/trade?access_token=${tokenData.access_token}`
+        );
+      } else {
+        res.redirect(
+          `https://quant-trader-ai-v4.vercel.app/trade?access_token=${tokenData.access_token}`
+        );
+      }
     } catch (error: any) {
       console.error("Failed to authenticate:", error.message);
-      res.status(500).send('Failed to authenticate');
+      res.status(500).send("Failed to authenticate");
     }
   }
 
@@ -46,16 +58,16 @@ class AuthController {
     const { accessToken, email } = req.body;
 
     if (!accessToken || !email) {
-      res.status(400).send('Missing access token or email');
+      res.status(400).send("Missing access token or email");
       return;
     }
 
     try {
       await this.authService.storeToken(accessToken, email);
-      res.status(200).send('Token stored successfully');
+      res.status(200).send("Token stored successfully");
     } catch (error) {
-      console.error('Error storing token:', error);
-      res.status(500).send('Failed to store token');
+      console.error("Error storing token:", error);
+      res.status(500).send("Failed to store token");
     }
   }
 }

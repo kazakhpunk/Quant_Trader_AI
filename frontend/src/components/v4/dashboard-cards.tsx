@@ -105,13 +105,25 @@ const Dashboard = () => {
 
   if (!data || !isSignedIn) {
     return (
-      <div className="flex justify-center min-h-screen mt-8 text-lg">
-        {" "}
-        Please check our&nbsp;
-        <Link href="/trade">
-          <span className="text-blue-500 underline">Trading</span>
-        </Link>
-        &nbsp;page. Dashboard will load after first trade!
+      <div className="flex justify-center mt-8 min-h-screen px-4 text-lg text-center">
+        <div>
+          <div className="inline md:inline-flex items-center whitespace-nowrap">
+            <span>Please check our</span>
+            <Link href="/trade">
+              <span className="mx-1 text-blue-500 underline">Trading</span>
+            </Link>
+            <span className="hidden md:inline">
+              page. Dashboard will load after first trade!
+            </span>
+          </div>
+          <div className="inline md:hidden">
+            <span>page.</span>
+            <br />
+            <span className="block">
+              Dashboard will load after first trade!
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -194,7 +206,7 @@ const Dashboard = () => {
                           className={`${
                             position.unrealized_pl < 0 &&
                             "absolute -left-2 px-4 py-2 top-0"
-                          }`}
+                          } flex items-center space-x-1`}
                         >
                           {formatCurrency(position.unrealized_pl)} (
                           {formatPercentage(
