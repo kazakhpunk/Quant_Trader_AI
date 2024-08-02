@@ -76,7 +76,7 @@ const fetchDashboardData = async (
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn } = useUser();
 
   useEffect(() => {
     const loadData = async () => {
@@ -150,7 +150,7 @@ const Dashboard = () => {
             <FaDollarSign className="mr-2" />
             <span className="font-bold">Total Account Value</span>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold pl-16">
+          <CardContent className="text-2xl font-semibold pl-12">
             {formatCurrency(data.account.portfolio_value)}
           </CardContent>
         </Card>
@@ -159,7 +159,7 @@ const Dashboard = () => {
             <FaDollarSign className="mr-2" />
             <span className="font-bold">Available Cash</span>
           </CardHeader>
-          <CardContent className="text-2xl font-semibold pl-16">
+          <CardContent className="text-2xl font-semibold pl-12">
             {formatCurrency(data.account.cash)}
           </CardContent>
         </Card>
@@ -170,7 +170,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="min-w-full ml-4">
+              <table className="min-w-full mx-auto">
                 <thead>
                   <tr className="text-left">
                     <th className="px-4 py-2">Symbol</th>
@@ -245,7 +245,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="min-w-full ml-8">
+                <table className="min-w-full mx-auto">
                   <thead>
                     <tr className="text-left">
                       <th className="px-4 py-2">Symbol</th>
