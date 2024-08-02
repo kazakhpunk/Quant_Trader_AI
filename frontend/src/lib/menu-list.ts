@@ -7,19 +7,19 @@ import {
   LayoutGrid,
   LucideIcon,
   Brain,
-  CandlestickChart
+  CandlestickChart,
 } from "lucide-react";
 
-import { 
-  BarChartIcon, 
-  BellIcon, 
-  HomeIcon, 
-  LineChartIcon, 
-  Package2Icon, 
-  SearchIcon, 
-  SendIcon, 
-  TrendingUpIcon, 
-  VariableIcon 
+import {
+  BarChartIcon,
+  BellIcon,
+  HomeIcon,
+  LineChartIcon,
+  Package2Icon,
+  SearchIcon,
+  SendIcon,
+  TrendingUpIcon,
+  VariableIcon,
 } from "@/components/admin-panel/icons";
 
 type Submenu = {
@@ -42,8 +42,6 @@ type Group = {
   menus: Menu[];
 };
 
-
-
 export function getMenuList(pathname: string): Group[] {
   return [
     {
@@ -54,12 +52,19 @@ export function getMenuList(pathname: string): Group[] {
           label: "Dashboard",
           active: pathname.includes("/dashboard"),
           icon: LayoutGrid,
-          submenus: []
-        }
-      ]
+          submenus: [],
+        },
+        {
+          href: "/trade",
+          label: "Trade",
+          active: pathname.includes("/trade"),
+          icon: CandlestickChart,
+          submenus: [],
+        },
+      ],
     },
     {
-      groupLabel: "Contents",
+      groupLabel: "Advanced tools",
       menus: [
         {
           href: "",
@@ -77,42 +82,35 @@ export function getMenuList(pathname: string): Group[] {
               href: "/analysis/price",
               label: "Price Changes",
               icon: LineChartIcon,
-              active: pathname === "/analysis/price"
+              active: pathname === "/analysis/price",
             },
             {
               href: "/analysis/technical",
               label: "Technical Analysis",
               icon: TrendingUpIcon,
-              active: pathname === "/analysis/new"
+              active: pathname === "/analysis/new",
             },
             {
               href: "/analysis/fundamental",
               label: "Fundamental Analysis",
               icon: BarChartIcon,
-              active: pathname === "/analysis/new"
+              active: pathname === "/analysis/new",
             },
             {
               href: "/analysis/sentiment",
               label: "Sentiment Analysis",
               icon: SendIcon,
-              active: pathname === "/analysis/sentiment"
+              active: pathname === "/analysis/sentiment",
             },
-            {
-              href: "/analysis/volatility",
-              label: "Volatility Analysis",
-              icon: VariableIcon,
-              active: pathname === "/analysis/volatility"
-            }
-          ]
+            // {
+            //   href: "/analysis/volatility",
+            //   label: "Volatility Analysis",
+            //   icon: VariableIcon,
+            //   active: pathname === "/analysis/volatility"
+            // }
+          ],
         },
-        {
-          href: "/trade",
-          label: "Trade",
-          active: pathname.includes("/trade"),
-          icon: CandlestickChart,
-          submenus: []
-        }
-      ]
+      ],
     },
     {
       groupLabel: "Settings",
@@ -122,9 +120,9 @@ export function getMenuList(pathname: string): Group[] {
           label: "Account",
           active: pathname.includes("/account"),
           icon: Settings,
-          submenus: []
-        }
-      ]
-    }
+          submenus: [],
+        },
+      ],
+    },
   ];
 }

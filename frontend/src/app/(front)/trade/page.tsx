@@ -8,7 +8,7 @@ import {
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
-  BreadcrumbSeparator
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { TradePanel } from "@/components/v2/trade-form";
 import LoginPrompt from "@/components/v3/login-prompt";
@@ -28,15 +28,17 @@ export default function CategoriesPage() {
       const token = urlParams.get("access_token");
 
       if (token && user) {
-        const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses[0]?.emailAddress;
+        const email =
+          user.primaryEmailAddress?.emailAddress ||
+          user.emailAddresses[0]?.emailAddress;
 
         try {
           const response = await fetch(`${getApiUrl()}/api/oauth/store_token`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json'
+              "Content-Type": "application/json",
             },
-            body: JSON.stringify({ accessToken: token, email })
+            body: JSON.stringify({ accessToken: token, email }),
           });
 
           if (!response.ok) {
@@ -57,7 +59,6 @@ export default function CategoriesPage() {
           console.log("Stored token:", storedToken);
         } else {
           console.error("No token found in URL or local storage");
-          // window.location.href = `${getApiUrl()}/api/oauth/authorize`;
         }
       }
     };
@@ -86,7 +87,7 @@ export default function CategoriesPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-        <LoginPrompt />
+      <LoginPrompt />
     </ContentLayout>
   );
 }
