@@ -202,18 +202,18 @@ const Dashboard = () => {
                             : "text-red-600 relative"
                         }`}
                       >
-                        <div
-                          className={`${
-                            position.unrealized_pl < 0 &&
-                            "absolute -left-2 px-4 py-2 top-0"
-                          } flex items-center space-x-1`}
-                        >
-                          {formatCurrency(position.unrealized_pl)} (
-                          {formatPercentage(
-                            position.unrealized_pl / position.market_value
-                          )}
-                          )
-                        </div>
+                        {formatCurrency(position.unrealized_pl)} ( )
+                      </td>
+                      <td
+                        className={`px-4 py-2 font-mono ${
+                          position.unrealized_pl >= 0
+                            ? "text-green-600"
+                            : "text-red-600 relative"
+                        }`}
+                      >
+                        {formatPercentage(
+                          position.unrealized_pl / position.market_value
+                        )}
                       </td>
                     </tr>
                   ))}
