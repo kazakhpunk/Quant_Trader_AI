@@ -178,7 +178,8 @@ const Dashboard = () => {
                     <th className="px-4 py-2">Entry Price</th>
                     <th className="px-4 py-2">Current Price</th>
                     <th className="px-4 py-2">Market Value</th>
-                    <th className="px-4 py-2">Total P&L</th>
+                    <th className="px-4 py-2">Absolute P&L</th>
+                    <th className="px-4 py-2">Relative P&L%</th>
                   </tr>
                 </thead>
                 <tbody>
