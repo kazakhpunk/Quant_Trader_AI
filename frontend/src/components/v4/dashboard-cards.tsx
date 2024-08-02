@@ -170,7 +170,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <table className="min-w-full mx-auto">
+              <table className="min-w-full ml-3">
                 <thead>
                   <tr className="text-left">
                     <th className="px-4 py-2">Symbol</th>
@@ -245,7 +245,7 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="min-w-full mx-auto">
+                <table className="min-w-full ml-3">
                   <thead>
                     <tr className="text-left">
                       <th className="px-4 py-2">Symbol</th>
