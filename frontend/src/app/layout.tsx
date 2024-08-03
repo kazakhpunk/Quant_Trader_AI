@@ -6,6 +6,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@/components/analytics";
+import { TailwindIndicator } from "@/components/tailwind-indicator";
 
 export const metadata: Metadata = {
   title: "Quant Trader AI",
@@ -38,6 +39,7 @@ export default function RootLayout({
         <body className={GeistSans.className}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             {children}
+            <TailwindIndicator />
             <Analytics />
           </ThemeProvider>
         </body>
