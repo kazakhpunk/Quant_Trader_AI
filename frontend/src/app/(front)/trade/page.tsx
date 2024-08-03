@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ContentLayout } from "@/components/admin-panel/content-layout";
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -14,7 +15,7 @@ import { TradePanel } from "@/components/v2/trade-form";
 import LoginPrompt from "@/components/v3/login-prompt";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { getApiUrl } from "@/lib/utils";
 
 export default function CategoriesPage() {
@@ -26,6 +27,7 @@ export default function CategoriesPage() {
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("access_token");
+      const { signOut } = useClerk();
 
       if (token && user) {
         const email =
@@ -57,6 +59,8 @@ export default function CategoriesPage() {
         if (storedToken) {
           setAccessToken(storedToken);
           console.log("Stored token:", storedToken);
+        } else if (user) {
+          await signOut({ redirectUrl: "/trade" });
         } else {
           console.error("No token found in URL or local storage");
         }

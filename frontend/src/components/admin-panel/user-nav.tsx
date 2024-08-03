@@ -32,13 +32,14 @@ export function UserNav() {
   const state = process.env.NEXT_PUBLIC_RANDOM_STATE;
   const scope = process.env.NEXT_PUBLIC_SCOPE;
 
-  const initials = user.firstName && user.lastName
-    ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
-    : user.emailAddresses[0]?.emailAddress.slice(0, 2).toUpperCase();
+  const initials =
+    user.firstName && user.lastName
+      ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`
+      : user.emailAddresses[0]?.emailAddress.slice(0, 2).toUpperCase();
 
-    const handleAlpacaAuth = () => {
-      window.location.href = `https://app.alpaca.markets/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
-    };
+  const handleAlpacaAuth = () => {
+    window.location.href = `https://app.alpaca.markets/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}&scope=${scope}`;
+  };
 
   return (
     <DropdownMenu>
@@ -52,7 +53,9 @@ export function UserNav() {
               >
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user.imageUrl || "#"} alt="Avatar" />
-                  <AvatarFallback className="bg-transparent">{initials}</AvatarFallback>
+                  <AvatarFallback className="bg-transparent">
+                    {initials}
+                  </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -73,24 +76,24 @@ export function UserNav() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem className="hover:cursor-pointer" asChild>
-            <Link href="/dashboard" className="flex items-center">
-              <LayoutGrid className="w-4 h-4 mr-3 text-muted-foreground" />
-              Dashboard
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="hover:cursor-pointer" asChild>
+        {/* <DropdownMenuGroup> */}
+        <DropdownMenuItem className="hover:cursor-pointer" asChild>
+          <Link href="/dashboard" className="flex items-center">
+            <LayoutGrid className="w-4 h-4 mr-3 text-muted-foreground" />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        {/* <DropdownMenuItem className="hover:cursor-pointer" asChild>
             <Link href="/account" className="flex items-center">
               <User className="w-4 h-4 mr-3 text-muted-foreground" />
               Account
             </Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+          </DropdownMenuItem> */}
+        {/* </DropdownMenuGroup> */}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="hover:cursor-pointer"
-          onClick={() => signOut({ redirectUrl: '/' })}
+          onClick={() => signOut({ redirectUrl: "/" })}
         >
           <LogOut className="w-4 h-4 mr-3 text-muted-foreground" />
           Sign out
