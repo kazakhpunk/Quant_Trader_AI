@@ -43,7 +43,7 @@ export default function HomePage() {
       </header>
       <main className="min-h-[calc(100vh-57px-97px)] flex-1">
         <div className="container relative pb-10">
-          <section className="mx-auto flex max-w-[980px] flex-col items-center gap-2 py-8 md:py-12 md:pb-8 lg:py-24 lg:pb-6">
+          <section className="mx-auto flex max-w-[980px] flex-col items-center gap-2 py-14 md:py-14 md:pb-8 lg:py-24 lg:pb-6">
             <h1 className="text-center text-3xl font-bold leading-tight tracking-tighter md:text-5xl lg:leading-[1.1]">
               Auto Buy Low and Sell High with
             </h1>
@@ -79,7 +79,7 @@ export default function HomePage() {
               height={450}
               alt="demo"
               priority
-              className="border rounded-xl shadow-lg dark:hidden"
+              className="border rounded-xl shadow-lg dark:hidden w-full max-w-[800px]"
             />
             <Image
               src="/mac-dark.png"
@@ -87,7 +87,7 @@ export default function HomePage() {
               height={450}
               alt="demo-dark"
               priority
-              className="border border-zinc-600 rounded-xl shadow-lg hidden dark:block dark:shadow-gray-500/5"
+              className="border border-zinc-600 rounded-xl shadow-lg hidden dark:block dark:shadow-gray-500/5 w-full max-w-[800px]"
             />
             <div className="aspect-[800/450] max-w-[800px] absolute inset-0 mx-auto">
               <Image
@@ -108,7 +108,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <section id="about" className="py-24 sm:py-32 mx-32 my-8">
+        <section id="about" className="py-12 sm:py-24 mx-8 sm:mx-32 my-24">
           <Card className="border rounded-lg px-8 py-12 shadow-lg">
             <div className="px-6 flex flex-col-reverse md:flex-row gap-8 md:gap-12">
               <Image
@@ -140,7 +140,7 @@ export default function HomePage() {
           </Card>
         </section>
 
-        <section className="py-24 sm:py-32 mx-28 my-8">
+        <section className="py-24 sm:py-32 sm:mx-28 mx-8 my-8">
           <div className="text-center">
             <h2 className="text-3xl md:text-4xl font-bold ">
               How It{" "}
