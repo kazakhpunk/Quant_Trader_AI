@@ -22,12 +22,12 @@ export default function CategoriesPage() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const { user } = useUser();
   const router = useRouter();
+  const { signOut } = useClerk();
 
   useEffect(() => {
     const handleOAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("access_token");
-      const { signOut } = useClerk();
 
       if (token && user) {
         const email =
