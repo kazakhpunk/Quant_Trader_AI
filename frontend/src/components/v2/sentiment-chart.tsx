@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Link, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -29,6 +29,7 @@ import {
 import { Combobox } from "./combobox";
 import { getApiUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
+import Link from "next/link";
 
 const chartConfig = {
   score: {
@@ -98,7 +99,7 @@ export function SentimentChart() {
           className="w-[160px] h-[36px] justify-center rounded-lg"
           asChild
         >
-          <Link href="/dashboard">Buy Stock</Link>
+          <Link href="/trade">Buy Stock</Link>
         </Button>
       </CardHeader>
       <CardContent>

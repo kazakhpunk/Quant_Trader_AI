@@ -100,7 +100,7 @@ export default function FundamentalAnalysis() {
           className="w-[160px] h-[36px] justify-center rounded-lg"
           asChild
         >
-          <Link href="/dashboard">Buy Stock</Link>
+          <Link href="/trade">Buy Stock</Link>
         </Button>
       </CardHeader>
       <CardContent className="mt-6">

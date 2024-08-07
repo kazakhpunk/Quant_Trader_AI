@@ -175,7 +175,7 @@ export default function PriceChart() {
           className="w-[160px] h-[36px] justify-center rounded-lg"
           asChild
         >
-          <Link href="/dashboard">Buy Stock</Link>
+          <Link href="/trade">Buy Stock</Link>
         </Button>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
