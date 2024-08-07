@@ -13,8 +13,10 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
-  TooltipProvider
+  TooltipProvider,
 } from "@/components/ui/tooltip";
+import CopyLink from "../v4/copy-link";
+import Guide from "../v4/guide";
 
 interface MenuProps {
   isOpen: boolean | undefined;
@@ -104,13 +106,19 @@ export function Menu({ isOpen }: MenuProps) {
             </li>
           ))}
           <li className="w-full grow flex items-end">
+            <Guide />
+          </li>
+          <li className="w-full flex items-end">
+            <CopyLink />
+          </li>
+          <li className="w-full flex items-end">
             <TooltipProvider disableHoverableContent>
               <Tooltip delayDuration={100}>
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => {}}
                     variant="outline"
-                    className="w-full justify-center h-10 mt-5"
+                    className="w-full justify-center h-10 mt-0"
                   >
                     <span className={cn(isOpen === false ? "" : "mr-4")}>
                       <LogOut size={18} />

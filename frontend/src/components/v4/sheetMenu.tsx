@@ -12,6 +12,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 
 export function Settings({
   isLiveTrading,
@@ -54,6 +55,7 @@ export function Settings({
             use at least Technical Analysis. Click save when you&apos;re done.
           </SheetDescription>
         </SheetHeader>
+        <Separator className="mb-4 mt-6" />
         <div className="flex flex-col gap-4 py-4">
           <div className="flex items-center space-x-2 justify-between pr-6">
             <Switch
@@ -71,6 +73,7 @@ export function Settings({
             />
             <Label htmlFor="paper">Paper Trading</Label>
           </div>
+          <Separator className="my-4" />
           <div className="flex items-center space-x-2 justify-between pr-6">
             <Switch id="technical" defaultChecked disabled />
             <Label htmlFor="technical">Technical Analysis</Label>
@@ -87,7 +90,17 @@ export function Settings({
             />
             <Label htmlFor="sentiment">Sentiment Analysis</Label>
           </div>
+          <Separator className="my-4" />
+          <div className="flex items-center space-x-2 justify-between pr-6">
+            <Switch id="highRisk" />
+            <Label htmlFor="sentiment">High Risk</Label>
+          </div>
+          <div className="flex items-center space-x-2 justify-between pr-6">
+            <Switch id="lowRisk" />
+            <Label htmlFor="sentiment">Low Risk</Label>
+          </div>
         </div>
+        <Separator className="my-4" />
         <SheetFooter>
           <SheetClose asChild>
             <Button type="submit" className="max-w-screen w-full mr-6 mt-4">
