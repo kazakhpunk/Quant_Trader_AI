@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { useState } from "react";
 
 export function Settings({
   isLiveTrading,
@@ -22,6 +23,9 @@ export function Settings({
   isSentimentEnabled,
   setIsSentimentEnabled,
 }: any) {
+  const [high, setHigh] = useState(false);
+  const [low, setLow] = useState(true);
+
   function handleLiveChange(checked: any) {
     setIsLiveTrading(checked);
     if (checked) {
@@ -37,6 +41,24 @@ export function Settings({
       setIsLiveTrading(false);
     } else {
       setIsLiveTrading(true);
+    }
+  }
+
+  function handleHighChange(checked: any) {
+    setHigh(checked);
+    if (checked) {
+      setLow(false);
+    } else {
+      setLow(true);
+    }
+  }
+
+  function handleLowChange(checked: any) {
+    setLow(checked);
+    if (checked) {
+      setHigh(false);
+    } else {
+      setHigh(true);
     }
   }
 
@@ -92,11 +114,19 @@ export function Settings({
           </div>
           <Separator className="my-4" />
           <div className="flex items-center space-x-2 justify-between pr-6">
-            <Switch id="highRisk" />
+            <Switch
+              id="highRisk"
+              checked={high}
+              onCheckedChange={handleHighChange}
+            />
             <Label htmlFor="sentiment">High Risk</Label>
           </div>
           <div className="flex items-center space-x-2 justify-between pr-6">
-            <Switch id="lowRisk" />
+            <Switch
+              id="lowRisk"
+              checked={low}
+              onCheckedChange={handleLowChange}
+            />
             <Label htmlFor="sentiment">Low Risk</Label>
           </div>
         </div>

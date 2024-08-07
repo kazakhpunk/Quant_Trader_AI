@@ -169,70 +169,72 @@ const Dashboard = () => {
             <span className="font-bold">Open Positions</span>
           </CardHeader>
           <CardContent>
-            <table className="min-w-full ml-3">
-              <thead>
-                <tr className="text-left">
-                  <th className="px-4 py-2">Symbol</th>
-                  <th className="px-4 py-2">Quantity</th>
-                  <th className="px-4 py-2">Entry Price</th>
-                  <th className="px-4 py-2">Current Price</th>
-                  <th className="px-4 py-2">Market Value</th>
-                  <th className="px-4 py-2">Absolute P&L</th>
-                  <th className="px-4 py-2">Relative P&L%</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.positions.map((position) => (
-                  <tr key={position.symbol}>
-                    <td className="px-4 py-2">{position.symbol}</td>
-                    <td className="px-4 py-2">{position.qty}</td>
-                    <td className="px-4 py-2">
-                      {formatCurrency(position.avg_entry_price)}
-                    </td>
-                    <td className="px-4 py-2">
-                      {formatCurrency(position.current_price)}
-                    </td>
-                    <td className="px-4 py-2">
-                      {formatCurrency(position.market_value)}
-                    </td>
-                    <td
-                      className={`px-4 py-2 font-mono ${
-                        position.unrealized_pl >= 0
-                          ? "text-green-600"
-                          : "text-red-600 relative"
-                      }`}
-                    >
-                      <div
-                        className={`${
-                          position.unrealized_pl < 0 &&
-                          "absolute -left-2 px-4 py-2 top-0"
-                        } flex items-center space-x-1`}
-                      >
-                        {formatCurrency(position.unrealized_pl)}
-                      </div>
-                    </td>
-                    <td
-                      className={`px-4 py-2 font-mono ${
-                        position.unrealized_pl >= 0
-                          ? "text-green-600"
-                          : "text-red-600 relative"
-                      }`}
-                    >
-                      <div
-                        className={`${
-                          position.unrealized_pl < 0 &&
-                          "absolute -left-2 px-4 py-2 top-0"
-                        } flex items-center space-x-1`}
-                      >
-                        {formatPercentage(
-                          position.unrealized_pl / position.market_value
-                        )}
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full ml-3">
+                <thead>
+                  <tr className="text-left">
+                    <th className="px-4 py-2">Symbol</th>
+                    <th className="px-4 py-2">Quantity</th>
+                    <th className="px-4 py-2">Entry Price</th>
+                    <th className="px-4 py-2">Current Price</th>
+                    <th className="px-4 py-2">Market Value</th>
+                    <th className="px-4 py-2">Absolute P&L</th>
+                    <th className="px-4 py-2">Relative P&L%</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.positions.map((position) => (
+                    <tr key={position.symbol}>
+                      <td className="px-4 py-2">{position.symbol}</td>
+                      <td className="px-4 py-2">{position.qty}</td>
+                      <td className="px-4 py-2">
+                        {formatCurrency(position.avg_entry_price)}
+                      </td>
+                      <td className="px-4 py-2">
+                        {formatCurrency(position.current_price)}
+                      </td>
+                      <td className="px-4 py-2">
+                        {formatCurrency(position.market_value)}
+                      </td>
+                      <td
+                        className={`px-4 py-2 font-mono ${
+                          position.unrealized_pl >= 0
+                            ? "text-green-600"
+                            : "text-red-600 relative"
+                        }`}
+                      >
+                        <div
+                          className={`${
+                            position.unrealized_pl < 0 &&
+                            "absolute -left-2 px-4 py-2 top-0"
+                          } flex items-center space-x-1`}
+                        >
+                          {formatCurrency(position.unrealized_pl)}
+                        </div>
+                      </td>
+                      <td
+                        className={`px-4 py-2 font-mono ${
+                          position.unrealized_pl >= 0
+                            ? "text-green-600"
+                            : "text-red-600 relative"
+                        }`}
+                      >
+                        <div
+                          className={`${
+                            position.unrealized_pl < 0 &&
+                            "absolute -left-2 px-4 py-2 top-0"
+                          } flex items-center space-x-1`}
+                        >
+                          {formatPercentage(
+                            position.unrealized_pl / position.market_value
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
         {data.orders && (
