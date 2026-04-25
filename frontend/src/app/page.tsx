@@ -19,9 +19,13 @@ export default function HomePage() {
           <About />
           <FeatureCarousel />
           <HowItWorks />
-          <FinalCTA />
         </main>
-        <SiteFooter />
+        {/* FinalCTA + footer share a wrapper so the CTA can stay sticky-pinned
+            at top while the footer scrolls up over it. */}
+        <div className="relative">
+          <FinalCTA />
+          <SiteFooter />
+        </div>
       </div>
     </MotionProvider>
   );

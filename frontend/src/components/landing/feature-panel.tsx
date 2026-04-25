@@ -36,7 +36,7 @@ export function FeaturePanel({
       className={cn(
         "flex w-full items-center justify-center",
         variant === "horizontal"
-          ? "h-screen shrink-0 px-6 md:px-12 lg:px-24"
+          ? "h-full shrink-0 px-6 md:px-12 lg:px-24"
           : "min-h-[80vh] px-6 py-20 md:px-12",
       )}
     >

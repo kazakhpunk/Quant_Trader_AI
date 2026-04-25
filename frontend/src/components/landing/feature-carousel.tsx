@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  motion,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import {
   AlarmClockIcon,
   BarChart3,
@@ -93,6 +88,14 @@ export function FeatureCarousel() {
 
   const useHorizontal = isLargeScreen && !reduce;
 
+  if (useHorizontal) {
+    return (
+      <section id="features" aria-label="Product features">
+        <HorizontalTrack />
+      </section>
+    );
+  }
+
   return (
     <section id="features" className="py-24">
       <div className="container">
@@ -103,52 +106,94 @@ export function FeatureCarousel() {
           </h2>
         </Reveal>
       </div>
-
-      {useHorizontal ? <HorizontalTrack /> : <StackedTrack />}
+      <StackedTrack />
     </section>
   );
 }
 
 function HorizontalTrack() {
   const outerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: outerRef,
-    offset: ["start start", "end end"],
-  });
-
-  // Each panel takes 25% of the track; we slide from 0 to -75% (4 panels × 100vw).
-  const endX = `-${((PANEL_COUNT - 1) / PANEL_COUNT) * 100}%`;
-  const x = useTransform(scrollYProgress, [0, 1], ["0%", endX]);
-  // Active index is whichever panel is currently centered. Mapping is linear
-  // 0→0%, 1/(N-1)→-1·step, …, 1→-(N-1)·step (where step = 100%/N), so panel k
-  // is centered at scrollYProgress = k/(N-1). Round to track the nearest panel.
-  const activeIndex = useTransform(scrollYProgress, (v) =>
-    Math.min(PANEL_COUNT - 1, Math.max(0, Math.round(v * (PANEL_COUNT - 1)))),
-  );
+  const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
 
   useEffect(() => {
-    return activeIndex.on("change", (v) => setActive(v));
-  }, [activeIndex]);
+    const outer = outerRef.current;
+    const track = trackRef.current;
+    if (!outer || !track) return;
+
+    let raf = 0;
+    let pending = false;
+
+    const update = () => {
+      const rect = outer.getBoundingClientRect();
+      const totalScroll = Math.max(1, rect.height - window.innerHeight);
+      const scrolled = -rect.top;
+      const progress = Math.max(0, Math.min(1, scrolled / totalScroll));
+
+      const shiftVw = -progress * (PANEL_COUNT - 1) * 100;
+      track.style.transform = `translate3d(${shiftVw}vw, 0, 0)`;
+
+      // Active panel: switch to panel k once the track has moved more than
+      // halfway from panel k-1 to panel k. Math.round on (PANEL_COUNT - 1)
+      // gives transitions at the exact midpoints between centered positions.
+      const next = Math.min(
+        PANEL_COUNT - 1,
+        Math.max(0, Math.round(progress * (PANEL_COUNT - 1))),
+      );
+      setActive((prev) => (prev === next ? prev : next));
+    };
+
+    const onScroll = () => {
+      if (pending) return;
+      pending = true;
+      raf = requestAnimationFrame(() => {
+        update();
+        pending = false;
+      });
+    };
+
+    update();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const current = PANELS[active] ?? PANELS[0];
 
   return (
     <div
       ref={outerRef}
-      className="relative mt-12"
+      className="relative"
       style={{ height: `${PANEL_COUNT * 100}vh` }}
-      aria-label="Product features"
     >
-      <div className="sticky top-0 h-screen overflow-hidden">
-        <motion.div
-          className="flex h-full"
-          style={{ x, width: `${PANEL_COUNT * 100}vw` }}
-        >
-          {PANELS.map((p) => (
-            <FeaturePanel key={p.index} data={p} variant="horizontal" />
-          ))}
-        </motion.div>
+      <div className="sticky top-0 flex h-screen flex-col overflow-hidden">
+        <header className="container pointer-events-none relative z-20 pt-24">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Features
+          </p>
+          <h2 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight md:text-4xl">
+            Four lenses.{" "}
+            <span className="text-muted-foreground">One signal.</span>
+          </h2>
+        </header>
 
-        <ProgressIndicator active={active} />
+        <div className="relative flex-1">
+          <div
+            ref={trackRef}
+            className="flex h-full will-change-transform"
+            style={{ width: `${PANEL_COUNT * 100}vw` }}
+          >
+            {PANELS.map((p) => (
+              <FeaturePanel key={p.index} data={p} variant="horizontal" />
+            ))}
+          </div>
+        </div>
+
+        <ProgressIndicator active={active} current={current} />
       </div>
     </div>
   );
@@ -166,11 +211,16 @@ function StackedTrack() {
   );
 }
 
-function ProgressIndicator({ active }: { active: number }) {
-  const current = PANELS[active] ?? PANELS[0];
+function ProgressIndicator({
+  active,
+  current,
+}: {
+  active: number;
+  current: FeaturePanelData;
+}) {
   const padded = current.index.toString().padStart(2, "0");
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-8 z-10 flex items-center justify-center gap-3">
+    <div className="pointer-events-none relative z-20 flex items-center justify-center gap-3 pb-8">
       <div className="flex items-center gap-2">
         {PANELS.map((p, i) => (
           <span
