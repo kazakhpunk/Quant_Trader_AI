@@ -142,12 +142,14 @@ const Dashboard = () => {
     (sum, p) => sum + safeNumber(p.unrealized_pl),
     0
   );
-  const totalMarketValue = positions.reduce(
-    (sum, p) => sum + safeNumber(p.market_value),
+  // Cost basis = sum(qty * entry price). P&L % is gain relative to what you
+  // paid, not relative to the current market value of the position.
+  const totalCostBasis = positions.reduce(
+    (sum, p) => sum + safeNumber(p.avg_entry_price) * safeNumber(p.qty),
     0
   );
-  const totalUnrealizedPct = totalMarketValue
-    ? (totalUnrealized / totalMarketValue) * 100
+  const totalUnrealizedPct = totalCostBasis
+    ? (totalUnrealized / totalCostBasis) * 100
     : 0;
   const orders = data.orders ?? [];
 
@@ -227,7 +229,9 @@ const Dashboard = () => {
                 positions.map((p) => {
                   const mv = safeNumber(p.market_value);
                   const pl = safeNumber(p.unrealized_pl);
-                  const pct = mv ? (pl / mv) * 100 : 0;
+                  const cost =
+                    safeNumber(p.avg_entry_price) * safeNumber(p.qty);
+                  const pct = cost ? (pl / cost) * 100 : 0;
                   const positive = pl >= 0;
                   return (
                     <tr
