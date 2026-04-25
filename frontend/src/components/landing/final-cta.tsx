@@ -6,7 +6,7 @@ import { Reveal } from "./reveal";
 
 export function FinalCTA() {
   return (
-    <section className="sticky top-0 -z-10 flex h-screen items-center justify-center overflow-hidden bg-background">
+    <section className="sticky top-0 flex h-screen items-center justify-center overflow-hidden bg-background">
       <CursorGrid />
       <div className="container relative z-10 mx-auto max-w-3xl text-center">
         <Reveal>
