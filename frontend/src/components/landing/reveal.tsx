@@ -8,7 +8,7 @@ type RevealProps = {
   delay?: number;
   y?: number;
   className?: string;
-  as?: "div" | "section" | "header" | "footer" | "article";
+  as?: "div" | "section" | "header" | "footer" | "article" | "li";
 } & Omit<HTMLMotionProps<"div">, "ref" | "children">;
 
 export function Reveal({

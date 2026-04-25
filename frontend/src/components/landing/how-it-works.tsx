@@ -33,18 +33,21 @@ export function HowItWorks() {
 
         <ol className="mt-16 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
           {STEPS.map((s, idx) => (
-            <Reveal key={s.number} delay={idx * 0.05} as="div">
-              <li className="relative">
-                {idx < STEPS.length - 1 && (
-                  <span
-                    aria-hidden
-                    className="absolute left-full top-6 hidden h-px w-full -translate-x-4 border-t border-dashed border-border/60 md:block"
-                  />
-                )}
-                <div className="text-5xl font-semibold text-primary/30">{s.number}</div>
-                <h3 className="mt-3 text-xl font-semibold">{s.title}</h3>
-                <p className="mt-2 text-muted-foreground">{s.description}</p>
-              </li>
+            <Reveal
+              key={s.number}
+              delay={idx * 0.05}
+              as="li"
+              className="relative"
+            >
+              {idx < STEPS.length - 1 && (
+                <span
+                  aria-hidden
+                  className="absolute left-full top-6 hidden h-px w-full -translate-x-4 border-t border-dashed border-border/60 md:block"
+                />
+              )}
+              <div className="text-5xl font-semibold text-primary/30">{s.number}</div>
+              <h3 className="mt-3 text-xl font-semibold">{s.title}</h3>
+              <p className="mt-2 text-muted-foreground">{s.description}</p>
             </Reveal>
           ))}
         </ol>
