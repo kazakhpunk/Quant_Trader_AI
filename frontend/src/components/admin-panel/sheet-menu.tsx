@@ -27,7 +27,7 @@ export function SheetMenu() {
             <Link href="/dashboard" className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/gem.ico"
+                src="/qtrader_ai.ico"
                 alt="Quant Trader AI"
                 width={24}
                 height={24}
