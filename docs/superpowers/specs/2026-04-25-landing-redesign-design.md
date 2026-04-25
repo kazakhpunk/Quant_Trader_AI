@@ -345,7 +345,7 @@ New files under `frontend/src/components/landing/`:
 </>
 ```
 
-The `<Header />` and `<SiteFooter />` may also need to apply to other public pages (signin/signup) — to be decided during implementation. If shared, lift them into the `(front)` layout.
+The `<Header />` and `<SiteFooter />` should be shared with other public pages (signin/signup) by rendering them in `frontend/src/app/(front)/layout.tsx`. The home page (`page.tsx`) currently lives outside the `(front)` route group; the cleanest path is to render `<Header />` / `<SiteFooter />` both in `(front)/layout.tsx` and in `page.tsx` (or to move `page.tsx` inside the group). Final placement is an implementation detail — both work, choose during the build.
 
 ---
 
