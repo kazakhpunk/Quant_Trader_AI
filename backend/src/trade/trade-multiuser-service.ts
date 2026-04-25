@@ -1,8 +1,15 @@
 import axios from "axios";
-import { OrderRequest, OrderResult } from "./trade-types";
+import {
+  OrderRequest,
+  OrderResult,
+  EngineRequest,
+  EnginePreview,
+  EnginePreviewRow,
+  DEFAULT_CAPS,
+  EngineCaps,
+} from "./trade-types";
 import AnalysisService from "../analysis/analysis-service";
 import AuthService from "../auth/auth-service";
-import { Stock } from "../analysis/types/analysisModel";
 import { Db } from "mongodb";
 import cron from "node-cron";
 import Bottleneck from "bottleneck";
@@ -31,6 +38,20 @@ class TradeService {
     } catch (error) {
       console.error("Error retrieving token:", error);
       throw new Error("Failed to retrieve token");
+    }
+  }
+
+  private async getCurrentHoldings(email: string, isLive: boolean): Promise<Set<string>> {
+    try {
+      const accessToken = await this.getAccessToken(email);
+      if (!accessToken) return new Set();
+      const apiUrl = this.getApiBaseUrl(isLive);
+      const { data } = await axios.get(`${apiUrl}/positions`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return new Set<string>((data || []).map((p: any) => p.symbol));
+    } catch {
+      return new Set();
     }
   }
 
@@ -209,6 +230,55 @@ class TradeService {
     }
   }
 
+  public async previewTrades(req: EngineRequest): Promise<EnginePreview> {
+    const caps: EngineCaps = { ...DEFAULT_CAPS, ...(req.caps ?? {}) };
+    const direction = req.direction ?? "long";
+    const skipHeld = req.skipHeld ?? true;
+
+    const { longCandidates, shortCandidates } =
+      await this.analysisService.getCandidatesFromDB();
+
+    let pool: { ticker: string; sentiment?: number; side: "buy" | "sell" }[] = [];
+    if (direction !== "short")
+      pool.push(...longCandidates.map((c: any) => ({ ...c, side: "buy" as const })));
+    if (direction !== "long")
+      pool.push(...shortCandidates.map((c: any) => ({ ...c, side: "sell" as const })));
+
+    if (req.isSentimentEnabled) pool = pool.filter((c) => (c.sentiment ?? 1) > 0.5);
+
+    if (skipHeld) {
+      const held = await this.getCurrentHoldings(req.email, req.isLiveTrading);
+      pool = pool.filter((c) => !held.has(c.ticker));
+    }
+
+    pool = pool.slice(0, caps.maxPositions);
+
+    const evenAlloc = pool.length ? req.amount / pool.length : 0;
+    const maxPerPos = (caps.maxPositionPct / 100) * req.amount;
+    const perPosAlloc = Math.min(evenAlloc, maxPerPos);
+
+    const rows: EnginePreviewRow[] = [];
+    for (const c of pool) {
+      const price = await this.getLatestPrice(c.ticker, req.email, req.isLiveTrading);
+      const qty = parseFloat((perPosAlloc / price).toFixed(2));
+      rows.push({
+        ticker: c.ticker,
+        side: c.side,
+        composite: 0,
+        topSignals: c.sentiment != null ? [`Sent ${Math.round(c.sentiment * 100)}`] : [],
+        allocation: +(qty * price).toFixed(2),
+        qty,
+        price,
+      });
+    }
+    return {
+      rows,
+      totalAllocated: +rows.reduce((s, r) => s + r.allocation, 0).toFixed(2),
+      totalRequested: req.amount,
+      caps,
+    };
+  }
+
   public async monitorAndManagePositions(
     email: string,
     isLive: boolean
@@ -299,46 +369,48 @@ class TradeService {
   }
 
   public async executeTrades(
-    amount: string,
+    amount: string | number,
     email: string,
     isLive: boolean,
-    isSentimentEnabled: boolean
-  ): Promise<{ longCandidates: any[]; shortCandidates: any[] }> {
-    await this.checkAccountBalance(email, parseFloat(amount), isLive); // Check account balance before trading
-    const { longCandidates, shortCandidates } =
-      await this.analysisService.getCandidatesFromDB();
-    console.log("Long candidates:", longCandidates);
-    console.log("Short candidates:", shortCandidates);
+    isSentimentEnabled: boolean,
+    caps: Partial<EngineCaps> = {},
+    direction: "long" | "short" | "both" = "long",
+    skipHeld = true,
+    dryRun = false
+  ): Promise<{ preview: EnginePreview; results: any[] }> {
+    const numericAmount = typeof amount === "string" ? parseFloat(amount) : amount;
+    if (!dryRun) await this.checkAccountBalance(email, numericAmount, isLive);
 
-    const totalTradingAmount = parseInt(amount); // Example amount in dollars
+    const preview = await this.previewTrades({
+      email,
+      amount: numericAmount,
+      isLiveTrading: isLive,
+      isSentimentEnabled,
+      caps,
+      direction,
+      skipHeld,
+    });
 
-    const longAllocation =
-      totalTradingAmount / (longCandidates.length + shortCandidates.length);
-    const shortAllocation =
-      totalTradingAmount / (longCandidates.length + shortCandidates.length);
+    if (dryRun) return { preview, results: [] };
 
-    const tradeCandidates = async (
-      candidates: Stock[],
-      allocation: number,
-      isLong: boolean
-    ) => {
-      for (const candidate of candidates) {
-        if (!isSentimentEnabled || (candidate.sentiment ?? 1) > 0.5) {
-          const symbol = candidate.ticker;
-          const price = await this.getLatestPrice(symbol, email, isLive);
-          const quantity = parseFloat((allocation / price).toFixed(2));
-
-          await this.placeSimpleOrder(symbol, quantity, isLong, email, isLive);
-        }
-      }
-    };
-
-    await tradeCandidates(longCandidates, longAllocation, true);
-    await tradeCandidates(shortCandidates, shortAllocation, false);
-
+    const fullCaps: EngineCaps = { ...DEFAULT_CAPS, ...caps };
+    const results: any[] = [];
+    for (const row of preview.rows) {
+      const r = await this.placeOrder({
+        email,
+        symbol: row.ticker,
+        side: row.side,
+        notional: row.allocation,
+        orderType: "market",
+        timeInForce: "day",
+        isLiveTrading: isLive,
+        stopLossPct: fullCaps.perPositionStopLossPct,
+        takeProfitPct: fullCaps.perPositionTakeProfitPct,
+      });
+      results.push({ ticker: row.ticker, ...r });
+    }
     await this.startQstash(email, isLive);
-
-    return { longCandidates, shortCandidates };
+    return { preview, results };
   }
 
   public async checkLongStatus(email: string, isLive: boolean) {

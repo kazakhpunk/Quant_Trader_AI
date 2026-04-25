@@ -18,25 +18,21 @@ class TradeController {
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
     try {
-      const { amount, email, isLiveTrading, isSentimentEnabled } = req.body;
-      console.log("Received request with params:", {
-        amount,
-        email,
-        isLiveTrading,
-        isSentimentEnabled,
-      });
+      const {
+        amount, email, isLiveTrading, isSentimentEnabled,
+        caps, direction, skipHeld, dryRun,
+      } = req.body;
 
       if (!amount || !email) {
         res.status(400).json({ error: "Amount and email are required" });
+        return;
       }
 
-      await this.tradeService.executeTrades(
-        amount,
-        email,
-        isLiveTrading,
-        isSentimentEnabled
+      const out = await this.tradeService.executeTrades(
+        amount, email, !!isLiveTrading, !!isSentimentEnabled,
+        caps ?? {}, direction ?? "long", skipHeld ?? true, !!dryRun
       );
-      res.status(200).json({ message: "Trades executed successfully" });
+      res.status(200).json(out);
     } catch (error: any) {
       console.error("Error executing trades:", error);
       res.status(500).json({ error: error.message });
