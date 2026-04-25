@@ -2,7 +2,6 @@ import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { TradePanel } from "../v2/trade-form";
 
 export default function LoginPrompt() {
   return (
@@ -30,7 +29,17 @@ export default function LoginPrompt() {
         </div>
       </SignedOut>
       <SignedIn>
-        <TradePanel />
+        <div className="mx-auto flex w-full max-w-md flex-col items-center justify-center px-4 py-24 text-center">
+          <div className="rounded-full border border-border/60 bg-muted/40 p-3">
+            <Lock className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <h2 className="mt-6 text-2xl font-semibold tracking-tight md:text-3xl">
+            Connect your brokerage
+          </h2>
+          <p className="mt-3 text-muted-foreground">
+            Link your Alpaca account to start placing orders.
+          </p>
+        </div>
       </SignedIn>
     </>
   );
