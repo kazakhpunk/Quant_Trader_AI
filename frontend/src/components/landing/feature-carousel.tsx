@@ -127,7 +127,8 @@ function HorizontalTrack({
   });
 
   // Each panel takes 25% of the track; we slide from 0 to -75% (4 panels × 100vw).
-  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-75%"]);
+  const endX = `-${((PANEL_COUNT - 1) / PANEL_COUNT) * 100}%`;
+  const x = useTransform(scrollYProgress, [0, 1], ["0%", endX]);
   const activeIndex = useTransform(scrollYProgress, (v) =>
     Math.min(PANEL_COUNT - 1, Math.floor(v * PANEL_COUNT)),
   );
@@ -183,8 +184,8 @@ function ProgressIndicator({ active }: { active: number }) {
             key={p.index}
             className={
               i === active
-                ? "h-1.5 w-8 rounded-full bg-primary transition-all duration-300"
-                : "h-1.5 w-1.5 rounded-full bg-muted-foreground/40 transition-all duration-300"
+                ? "h-1.5 w-8 rounded-full bg-primary transition-all duration-300 motion-reduce:transition-none"
+                : "h-1.5 w-1.5 rounded-full bg-muted-foreground/40 transition-all duration-300 motion-reduce:transition-none"
             }
           />
         ))}
