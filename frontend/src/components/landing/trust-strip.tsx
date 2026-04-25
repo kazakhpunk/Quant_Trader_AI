@@ -18,6 +18,7 @@ function CountUp({ to, suffix }: { to: number; suffix?: string }) {
   const [display, setDisplay] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
   const triggered = useRef(false);
+  const rafId = useRef<number | null>(null);
 
   useEffect(() => {
     const el = ref.current;
@@ -38,15 +39,18 @@ function CountUp({ to, suffix }: { to: number; suffix?: string }) {
             const t = Math.min(1, (now - start) / duration);
             const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
             setDisplay(Math.round(to * eased));
-            if (t < 1) requestAnimationFrame(tick);
+            if (t < 1) rafId.current = requestAnimationFrame(tick);
           };
-          requestAnimationFrame(tick);
+          rafId.current = requestAnimationFrame(tick);
         }
       },
       { threshold: 0.4 },
     );
     obs.observe(el);
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+    };
   }, [to]);
 
   return (
