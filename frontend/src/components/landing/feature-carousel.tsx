@@ -97,7 +97,7 @@ export function FeatureCarousel() {
   }
 
   return (
-    <section id="features" className="py-24">
+    <section id="features" className="py-32">
       <div className="container">
         <Reveal>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Features</p>

@@ -20,7 +20,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24">
+    <section id="how-it-works" className="py-40">
       <div className="container">
         <Reveal>
           <p className="text-center text-xs uppercase tracking-widest text-muted-foreground">
@@ -44,7 +44,8 @@ export function HowItWorks() {
                 as="li"
                 className="relative"
               >
-                <div className="inline-flex items-center justify-center rounded-md bg-background pr-3 text-5xl font-semibold leading-none text-primary/30">
+                <div className={`inline-flex items-center justify-center rounded-md bg-background ${idx === 0 ? "pr-2" : "px-2"} text-5xl font-semibold leading-none text-primary/30`}>
+           
                   {s.number}
                 </div>
                 <h3 className="mt-4 text-xl font-semibold">{s.title}</h3>

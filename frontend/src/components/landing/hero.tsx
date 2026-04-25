@@ -12,7 +12,7 @@ export function Hero() {
     <section className="relative min-h-[88vh] overflow-hidden">
       <CursorGrid cursorAware />
 
-      <div className="container relative z-10 flex min-h-[88vh] flex-col items-center justify-center pb-20 pt-28">
+      <div className="container relative z-10 flex min-h-[88vh] flex-col items-center justify-center pb-32 pt-32">
         <Reveal>
           <Link
             href="#features"

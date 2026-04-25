@@ -6,7 +6,7 @@ import { Reveal } from "./reveal";
 
 export function FinalCTA() {
   return (
-    <section className="relative overflow-hidden py-32">
+    <section className="relative overflow-hidden py-40">
       <CursorGrid />
       <div className="container relative z-10 mx-auto max-w-3xl text-center">
         <Reveal>
