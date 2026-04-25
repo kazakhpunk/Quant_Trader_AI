@@ -16,6 +16,7 @@ const createTradeRouter = async (db: Db) => {
   router.post("/update", tradeController.fetchAndAnalyzeData);
   router.get("/price", tradeController.getLatestPrice);
   router.get("/open?", tradeController.isMarketOpen);
+  router.post("/trade/order", tradeController.placeOrder);
 
   return router;
 };

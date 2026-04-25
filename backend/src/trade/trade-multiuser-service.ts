@@ -1,4 +1,5 @@
 import axios from "axios";
+import { OrderRequest, OrderResult } from "./trade-types";
 import AnalysisService from "../analysis/analysis-service";
 import AuthService from "../auth/auth-service";
 import { Stock } from "../analysis/types/analysisModel";
@@ -147,6 +148,64 @@ class TradeService {
       );
     } catch (error) {
       console.error(`Error placing simple order for ${symbol}:`, error);
+    }
+  }
+
+  public async placeOrder(req: OrderRequest): Promise<OrderResult> {
+    const accessToken = await this.getAccessToken(req.email);
+    if (!accessToken) return { ok: false, error: "Access token is missing" };
+
+    const apiUrl = this.getApiBaseUrl(req.isLiveTrading);
+
+    // resolve quantity
+    let qty = req.qty;
+    let referencePrice: number | null = null;
+    if (qty == null && req.notional != null) {
+      referencePrice = await this.getLatestPrice(req.symbol, req.email, req.isLiveTrading);
+      qty = parseFloat((req.notional / referencePrice).toFixed(2));
+    }
+    if (!qty || qty <= 0) return { ok: false, error: "qty resolved to 0" };
+
+    const wantsBracket = req.stopLossPct != null || req.takeProfitPct != null;
+    const basePayload: any = {
+      symbol: req.symbol,
+      qty,
+      side: req.side,
+      type: req.orderType,
+      time_in_force: req.timeInForce,
+    };
+    if (req.orderType === "limit") basePayload.limit_price = req.limitPrice;
+
+    if (wantsBracket) {
+      const ref =
+        referencePrice ??
+        (req.orderType === "limit"
+          ? req.limitPrice!
+          : await this.getLatestPrice(req.symbol, req.email, req.isLiveTrading));
+      basePayload.order_class = "bracket";
+      if (req.stopLossPct != null) {
+        basePayload.stop_loss = {
+          stop_price: +(ref * (1 - req.stopLossPct / 100)).toFixed(2),
+        };
+      }
+      if (req.takeProfitPct != null) {
+        basePayload.take_profit = {
+          limit_price: +(ref * (1 + req.takeProfitPct / 100)).toFixed(2),
+        };
+      }
+    }
+
+    try {
+      const { data } = await axios.post(`${apiUrl}/orders`, basePayload, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+      return { ok: true, orderId: data.id, status: data.status };
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err.message;
+      return { ok: false, error: msg };
     }
   }
 

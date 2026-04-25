@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import TradeService from "./trade-multiuser-service";
+import { validateOrderRequest, OrderRequest } from "./trade-types";
 
 class TradeController {
   private tradeService: TradeService;
@@ -12,6 +13,7 @@ class TradeController {
     this.startMonitoringCronJob = this.startMonitoringCronJob.bind(this);
     this.isMarketOpen = this.isMarketOpen.bind(this);
     this.fetchAndAnalyzeData = this.fetchAndAnalyzeData.bind(this);
+    this.placeOrder = this.placeOrder.bind(this);
   }
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
@@ -112,6 +114,14 @@ class TradeController {
       console.error("Error checking market status:", error);
       res.status(500).json({ error: error.message });
     }
+  }
+
+  public async placeOrder(req: Request, res: Response): Promise<void> {
+    const body = req.body as Partial<OrderRequest>;
+    const err = validateOrderRequest(body);
+    if (err) { res.status(400).json({ error: err }); return; }
+    const result = await this.tradeService.placeOrder(body as OrderRequest);
+    res.status(result.ok ? 200 : 502).json(result);
   }
 }
 
