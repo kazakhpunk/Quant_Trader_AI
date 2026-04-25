@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Gem } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/hooks/use-store";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,14 @@ export function Sidebar() {
           asChild
         >
           <Link href="/" className="flex items-center gap-2">
-            <Gem className="w-6 h-6 mr-1" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/gem.ico"
+              alt="Quant Trader AI"
+              width={24}
+              height={24}
+              className="w-6 h-6 mr-1"
+            />
             <h1
               className={cn(
                 "font-bold text-lg whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",

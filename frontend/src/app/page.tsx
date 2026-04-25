@@ -3,7 +3,6 @@ import Image from "next/image";
 import {
   AlarmClockIcon,
   BarChartIcon,
-  Gem,
   PieChartIcon,
   TrendingUpIcon,
 } from "lucide-react";
@@ -22,7 +21,14 @@ export default function HomePage() {
             href="/"
             className="flex justify-start items-center hover:opacity-85 transition-opacity duration-300"
           >
-            <Gem className="w-6 h-6 mr-3" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/gem.ico"
+              alt="Quant Trader AI"
+              width={24}
+              height={24}
+              className="w-6 h-6 mr-3"
+            />
             <span className="font-bold">Quant Trader AI</span>
             <span className="sr-only">Quant Trader AI</span>
           </Link>
