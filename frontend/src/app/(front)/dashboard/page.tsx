@@ -11,6 +11,7 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import Dashboard from "@/components/v4/dashboard-cards";
+import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 
 export default function DashboardPage() {
   return (
@@ -30,6 +31,7 @@ export default function DashboardPage() {
       </Breadcrumb>
       {/* <PlaceholderContent /> */}
       <Dashboard/>
+      <OrderDrawer />
     </ContentLayout>
   );
 }

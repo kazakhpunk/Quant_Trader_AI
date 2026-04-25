@@ -5,6 +5,7 @@ import { CircularProgress } from "@mui/material";
 import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
+import { useOrderDrawer } from "@/lib/order-drawer-store";
 
 interface AccountData {
   portfolio_value: number;
@@ -107,6 +108,8 @@ const Dashboard = () => {
     };
     loadData();
   }, []);
+
+  const openDrawer = useOrderDrawer((s) => s.open);
 
   if (loading) {
     return (
@@ -236,7 +239,8 @@ const Dashboard = () => {
                   return (
                     <tr
                       key={p.symbol}
-                      className="transition-colors duration-150 hover:bg-muted/30"
+                      className="cursor-pointer transition-colors duration-150 hover:bg-muted/30"
+                      onClick={() => openDrawer(p.symbol)}
                     >
                       <td className="px-4 py-3 font-medium">{p.symbol}</td>
                       <td className="px-4 py-3 text-right font-mono tabular-nums">
@@ -315,7 +319,8 @@ const Dashboard = () => {
                 orders.map((o) => (
                   <tr
                     key={o.id}
-                    className="transition-colors duration-150 hover:bg-muted/30"
+                    className="cursor-pointer transition-colors duration-150 hover:bg-muted/30"
+                    onClick={() => openDrawer(o.symbol)}
                   >
                     <td className="px-4 py-3 font-medium">{o.symbol}</td>
                     <td className="px-4 py-3">

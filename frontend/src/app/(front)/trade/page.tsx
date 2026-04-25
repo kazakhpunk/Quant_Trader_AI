@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { TradePanel } from "@/components/v2/trade-form";
 import LoginPrompt from "@/components/v3/login-prompt";
+import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
@@ -92,6 +93,7 @@ export default function CategoriesPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <LoginPrompt />
+      <OrderDrawer />
     </ContentLayout>
   );
 }
