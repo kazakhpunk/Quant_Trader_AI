@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { TradePanel } from "@/components/v2/trade-form";
 import LoginPrompt from "@/components/v3/login-prompt";
+import { EngineFlow } from "@/components/v4/trade/engine-flow";
 import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -92,7 +93,7 @@ export default function CategoriesPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <LoginPrompt />
+      {accessToken ? <EngineFlow /> : <LoginPrompt />}
       <OrderDrawer />
     </ContentLayout>
   );
