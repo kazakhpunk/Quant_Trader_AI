@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type CursorGridProps = {
@@ -23,6 +23,17 @@ export function CursorGrid({
   className,
 }: CursorGridProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const reactId = useId();
+  const patternId = `qtai-grid-${reactId.replace(/:/g, "")}`;
+
+  const [prefersReduce, setPrefersReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setPrefersReduce(mq.matches);
+    const onChange = () => setPrefersReduce(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
 
   useEffect(() => {
     if (!cursorAware) return;
@@ -60,13 +71,14 @@ export function CursorGrid({
     };
   }, [cursorAware]);
 
-  // Use motion-safe variants of the mask: when reduced motion is on, render a flat static grid.
-  const maskStyle = cursorAware
-    ? ({
-        WebkitMaskImage: `radial-gradient(${maskRadius}px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 80%)`,
-        maskImage: `radial-gradient(${maskRadius}px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 80%)`,
-      } as React.CSSProperties)
-    : { opacity: staticOpacity };
+  // When cursor-aware AND not reduced-motion → mask reveal. Otherwise → flat static grid.
+  const maskStyle =
+    cursorAware && !prefersReduce
+      ? ({
+          WebkitMaskImage: `radial-gradient(${maskRadius}px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 80%)`,
+          maskImage: `radial-gradient(${maskRadius}px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 80%)`,
+        } as React.CSSProperties)
+      : { opacity: staticOpacity };
 
   return (
     <div
@@ -81,7 +93,7 @@ export function CursorGrid({
       <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern
-            id="qtai-grid"
+            id={patternId}
             width={spacing}
             height={spacing}
             patternUnits="userSpaceOnUse"
@@ -94,7 +106,7 @@ export function CursorGrid({
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill="url(#qtai-grid)" />
+        <rect width="100%" height="100%" fill={`url(#${patternId})`} />
       </svg>
     </div>
   );

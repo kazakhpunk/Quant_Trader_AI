@@ -86,7 +86,6 @@ const PANELS: FeaturePanelData[] = [
 const PANEL_COUNT = PANELS.length;
 
 export function FeatureCarousel() {
-  const outerRef = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const [isLargeScreen, setIsLargeScreen] = useState(false);
 
@@ -111,16 +110,13 @@ export function FeatureCarousel() {
         </Reveal>
       </div>
 
-      {useHorizontal ? <HorizontalTrack outerRef={outerRef} /> : <StackedTrack />}
+      {useHorizontal ? <HorizontalTrack /> : <StackedTrack />}
     </section>
   );
 }
 
-function HorizontalTrack({
-  outerRef,
-}: {
-  outerRef: React.RefObject<HTMLDivElement>;
-}) {
+function HorizontalTrack() {
+  const outerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: outerRef,
     offset: ["start start", "end end"],

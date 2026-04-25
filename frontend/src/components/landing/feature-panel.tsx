@@ -32,7 +32,7 @@ export function FeaturePanel({
   const totalPadded = data.total.toString().padStart(2, "0");
 
   return (
-    <article
+    <section
       className={cn(
         "flex w-full items-center justify-center",
         variant === "horizontal"
@@ -67,9 +67,9 @@ export function FeaturePanel({
           <p className="font-mono text-xs text-muted-foreground">
             {padded} / {totalPadded}
           </p>
-          <h3 className="mt-3 text-3xl font-semibold tracking-tight lg:text-5xl">
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight lg:text-5xl">
             {data.title}
-          </h3>
+          </h2>
           <p className="mt-4 text-lg text-muted-foreground">{data.lede}</p>
 
           <ul className="mt-8 space-y-4">
@@ -87,6 +87,6 @@ export function FeaturePanel({
           </ul>
         </div>
       </div>
-    </article>
+    </section>
   );
 }
