@@ -62,25 +62,31 @@ const fetchDashboardData = async (
   }
 };
 
-const formatCurrency = (value: number) =>
+const safeNumber = (value: unknown): number => {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const formatCurrency = (value: unknown) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-  }).format(value);
+  }).format(safeNumber(value));
 
-const formatSignedCurrency = (value: number) => {
-  const formatted = formatCurrency(Math.abs(value));
-  if (value > 0) return `+${formatted}`;
-  if (value < 0) return `−${formatted}`;
+const formatSignedCurrency = (value: unknown) => {
+  const n = safeNumber(value);
+  const formatted = formatCurrency(Math.abs(n));
+  if (n > 0) return `+${formatted}`;
+  if (n < 0) return `−${formatted}`;
   return formatted;
 };
 
-const formatPercent = (value: number) =>
+const formatPercent = (value: unknown) =>
   new Intl.NumberFormat("en-US", {
     style: "percent",
     minimumFractionDigits: 2,
     signDisplay: "exceptZero",
-  }).format(value / 100);
+  }).format(safeNumber(value) / 100);
 
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -129,9 +135,17 @@ const Dashboard = () => {
     );
   }
 
-  const positions = data.positions.filter((p) => p.unrealized_pl > -0.02);
-  const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealized_pl, 0);
-  const totalMarketValue = positions.reduce((sum, p) => sum + p.market_value, 0);
+  const positions = (data.positions ?? []).filter(
+    (p) => safeNumber(p.unrealized_pl) > -0.02
+  );
+  const totalUnrealized = positions.reduce(
+    (sum, p) => sum + safeNumber(p.unrealized_pl),
+    0
+  );
+  const totalMarketValue = positions.reduce(
+    (sum, p) => sum + safeNumber(p.market_value),
+    0
+  );
   const totalUnrealizedPct = totalMarketValue
     ? (totalUnrealized / totalMarketValue) * 100
     : 0;
@@ -211,10 +225,10 @@ const Dashboard = () => {
                 </tr>
               ) : (
                 positions.map((p) => {
-                  const pct = p.market_value
-                    ? (p.unrealized_pl / p.market_value) * 100
-                    : 0;
-                  const positive = p.unrealized_pl >= 0;
+                  const mv = safeNumber(p.market_value);
+                  const pl = safeNumber(p.unrealized_pl);
+                  const pct = mv ? (pl / mv) * 100 : 0;
+                  const positive = pl >= 0;
                   return (
                     <tr
                       key={p.symbol}
@@ -241,7 +255,7 @@ const Dashboard = () => {
                             : "text-rose-600 dark:text-rose-400"
                         )}
                       >
-                        {formatSignedCurrency(p.unrealized_pl)}
+                        {formatSignedCurrency(pl)}
                       </td>
                       <td
                         className={cn(
