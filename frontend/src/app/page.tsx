@@ -78,7 +78,11 @@ export default function HomePage() {
               </Button>
             </div>
           </section>
-          <div className="flex justify-center relative mt-8">
+          <Link
+            href="/trade"
+            className="flex justify-center relative mt-8 cursor-pointer hover:opacity-90 transition-opacity duration-300"
+            aria-label="Open trading dashboard"
+          >
             <Image
               src="/mac-light.png"
               width={800}
@@ -95,7 +99,7 @@ export default function HomePage() {
               priority
               className="border border-zinc-600 rounded-xl shadow-lg hidden dark:block dark:shadow-gray-500/5 w-full max-w-[800px]"
             />
-            <div className="aspect-[800/450] max-w-[800px] absolute inset-0 mx-auto">
+            <div className="aspect-[800/450] max-w-[800px] absolute inset-0 mx-auto pointer-events-none">
               <Image
                 src="/phone-light.png"
                 width={180}
@@ -111,7 +115,7 @@ export default function HomePage() {
                 className="border border-zinc-600 rounded-xl absolute -bottom-4 -right-8 hidden dark:lg:block shadow-lg"
               />
             </div>
-          </div>
+          </Link>
         </div>
 
         <section id="about" className="py-12 sm:py-24 mx-8 sm:mx-32 my-24">
