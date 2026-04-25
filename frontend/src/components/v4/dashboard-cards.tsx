@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
+import { getRatings, RatingRow, DIMENSIONS } from "@/lib/api/ratings";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AccountData {
   portfolio_value: number;
@@ -109,6 +111,15 @@ const Dashboard = () => {
     loadData();
   }, []);
 
+  const [ratings, setRatings] = useState<Record<string, RatingRow>>({});
+  useEffect(() => {
+    getRatings().then((rows) => {
+      const byTicker: Record<string, RatingRow> = {};
+      rows.forEach((r) => { byTicker[r.ticker] = r; });
+      setRatings(byTicker);
+    }).catch(() => {});
+  }, []);
+
   const openDrawer = useOrderDrawer((s) => s.open);
 
   if (loading) {
@@ -189,13 +200,15 @@ const Dashboard = () => {
       {/* Open positions */}
       <section>
         <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold tracking-tight">
-            Open positions
-          </h2>
-          <span className="font-mono text-xs text-muted-foreground">
-            {positions.length}{" "}
-            {positions.length === 1 ? "position" : "positions"}
-          </span>
+          <h2 className="text-lg font-semibold tracking-tight">Open positions</h2>
+          <div className="flex items-baseline gap-4">
+            <Link href="/analysis/ratings" className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+              View full ratings →
+            </Link>
+            <span className="font-mono text-xs text-muted-foreground">
+              {positions.length} {positions.length === 1 ? "position" : "positions"}
+            </span>
+          </div>
         </div>
         <div className="mt-4 overflow-hidden rounded-lg border border-border/60">
           <table className="w-full table-auto">
@@ -216,6 +229,7 @@ const Dashboard = () => {
                 <th className="hidden px-4 py-3 text-right font-medium sm:table-cell">
                   %
                 </th>
+                <th className="hidden px-4 py-3 text-right font-medium md:table-cell">Rating</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -274,6 +288,9 @@ const Dashboard = () => {
                         )}
                       >
                         {formatPercent(pct)}
+                      </td>
+                      <td className="hidden px-4 py-3 text-right md:table-cell">
+                        <RatingCell row={ratings[p.symbol]} />
                       </td>
                     </tr>
                   );
@@ -412,6 +429,35 @@ function StatusBadge({ status }: { status: string }) {
     >
       {status.replace(/_/g, " ")}
     </span>
+  );
+}
+
+function RatingCell({ row }: { row: RatingRow | undefined }) {
+  if (!row) return <span className="text-muted-foreground">—</span>;
+  const cls =
+    row.composite >= 75 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+    : row.composite >= 50 ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+    : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300";
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 font-mono text-xs", cls)}>
+            {row.composite}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>
+          <ul className="text-xs">
+            {DIMENSIONS.map((d) => (
+              <li key={d} className="flex justify-between gap-4">
+                <span className="capitalize text-muted-foreground">{d}</span>
+                <span className="font-mono tabular-nums">{Math.round(row.scores[d])}</span>
+              </li>
+            ))}
+          </ul>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
