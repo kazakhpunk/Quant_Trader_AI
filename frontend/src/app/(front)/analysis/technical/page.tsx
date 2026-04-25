@@ -10,6 +10,8 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import TechnicalCharts from "@/components/v2/tech-chart";
+import { TradeButton } from "@/components/v4/order-drawer/trade-button";
+import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 
 export default function NewPostPage() {
   return (
@@ -39,8 +41,10 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+      <TradeButton />
       {/* <PlaceholderContent /> */}
       <TechnicalCharts/>
+      <OrderDrawer />
     </ContentLayout>
   );
 }

@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import PlaceholderContent from "@/components/v2/placeholder-content";
 import { ContentLayout } from "@/components/admin-panel/content-layout";
+import { TradeButton } from "@/components/v4/order-drawer/trade-button";
+import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -39,7 +41,9 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+      <TradeButton />
       <PlaceholderContent />
+      <OrderDrawer />
     </ContentLayout>
   );
 }

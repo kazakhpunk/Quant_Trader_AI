@@ -11,6 +11,8 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import { SentimentChart } from "@/components/v2/sentiment-chart";
+import { TradeButton } from "@/components/v4/order-drawer/trade-button";
+import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 
 export default function NewPostPage() {
   return (
@@ -40,8 +42,10 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+      <TradeButton />
       {/* <PlaceholderContent /> */}
       <SentimentChart/>
+      <OrderDrawer />
     </ContentLayout>
   );
 }
