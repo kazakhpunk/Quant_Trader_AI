@@ -37,18 +37,18 @@ export function SiteHeader() {
         role="banner"
         initial={false}
         animate={{
-          width: scrolled ? "min(768px, calc(100% - 32px))" : "100%",
+          width: scrolled ? "min(960px, calc(100% - 32px))" : "100%",
           height: scrolled ? 52 : 64,
           top: scrolled ? 12 : 0,
           borderRadius: scrolled ? 9999 : 0,
         }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
         className={cn(
           "fixed left-1/2 z-50 -translate-x-1/2",
           "border-border/50",
           scrolled
-            ? "border bg-background/70 shadow-lg shadow-black/5 backdrop-blur-xl"
-            : "border-b border-border/40 bg-background/95 backdrop-blur-sm dark:bg-black/60",
+            ? "border bg-background/95 shadow-lg shadow-black/5 backdrop-blur-xl supports-[backdrop-filter]:bg-background/80"
+            : "border-b border-border/40 bg-background dark:bg-background",
         )}
       >
         <div className="flex h-full items-center px-4 md:px-6">
@@ -67,19 +67,19 @@ export function SiteHeader() {
             >
               <Link
                 href="#features"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground/90"
               >
                 Features
               </Link>
               <Link
                 href="#how-it-works"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground/90"
               >
                 How it works
               </Link>
               <Link
                 href="#about"
-                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground/90"
               >
                 About
               </Link>

@@ -19,8 +19,8 @@ export function Hero() {
             className="mb-8 inline-flex items-center gap-2 rounded-full border border-border/60 bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-background/80"
           >
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75 motion-reduce:animate-none" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60 opacity-75 motion-reduce:animate-none" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             Live signals
           </Link>
@@ -75,10 +75,22 @@ export function Hero() {
               className="hidden w-full dark:block"
             />
           </div>
+          <Image
+            src="/phone-light.png"
+            width={180}
+            height={390}
+            alt="Quant Trader AI mobile preview"
+            className="absolute -bottom-4 -right-8 hidden rounded-xl border border-border/60 shadow-lg lg:block dark:hidden"
+          />
+          <Image
+            src="/phone-dark.png"
+            width={180}
+            height={390}
+            alt="Quant Trader AI mobile preview"
+            className="absolute -bottom-4 -right-8 hidden rounded-xl border border-border/60 shadow-lg dark:lg:block"
+          />
         </Reveal>
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background" />
     </section>
   );
 }

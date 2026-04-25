@@ -16,7 +16,7 @@ export type FeaturePanelData = {
   title: string;
   lede: string;
   callouts: FeatureCallout[];
-  imageSrc: string;
+  imageSrc?: string;
   imageDarkSrc?: string;
   imageAlt: string;
 };
@@ -44,21 +44,27 @@ export function FeaturePanel({
         <div className="relative">
           <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-[60%] w-[80%] rounded-full bg-primary/15 blur-3xl" />
           <div className="relative overflow-hidden rounded-xl border border-border/60 shadow-2xl">
-            <Image
-              src={data.imageSrc}
-              alt={data.imageAlt}
-              width={1600}
-              height={900}
-              className={cn("block w-full", data.imageDarkSrc && "dark:hidden")}
-            />
-            {data.imageDarkSrc && (
-              <Image
-                src={data.imageDarkSrc}
-                alt={data.imageAlt}
-                width={1600}
-                height={900}
-                className="hidden w-full dark:block"
-              />
+            {data.imageSrc ? (
+              <>
+                <Image
+                  src={data.imageSrc}
+                  alt={data.imageAlt}
+                  width={1600}
+                  height={900}
+                  className={cn("block w-full", data.imageDarkSrc && "dark:hidden")}
+                />
+                {data.imageDarkSrc && (
+                  <Image
+                    src={data.imageDarkSrc}
+                    alt={data.imageAlt}
+                    width={1600}
+                    height={900}
+                    className="hidden w-full dark:block"
+                  />
+                )}
+              </>
+            ) : (
+              <FeatureSkeleton title={data.title} />
             )}
           </div>
         </div>
@@ -88,5 +94,46 @@ export function FeaturePanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function FeatureSkeleton({ title }: { title: string }) {
+  return (
+    <div
+      role="img"
+      aria-label={`${title} preview — coming soon`}
+      className="relative aspect-[16/9] w-full overflow-hidden bg-muted"
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-muted via-muted/40 to-muted" />
+      <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-transparent via-foreground/[0.04] to-transparent motion-reduce:animate-none" />
+      <div className="relative flex h-full flex-col gap-4 p-8">
+        <div className="flex items-center gap-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <div className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <div className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+          <div className="ml-auto h-3 w-32 rounded bg-foreground/10" />
+        </div>
+        <div className="grid flex-1 grid-cols-3 gap-4">
+          <div className="space-y-3">
+            <div className="h-3 w-2/3 rounded bg-foreground/15" />
+            <div className="h-2 w-full rounded bg-foreground/10" />
+            <div className="h-2 w-5/6 rounded bg-foreground/10" />
+            <div className="mt-4 h-16 rounded bg-foreground/[0.07]" />
+          </div>
+          <div className="col-span-2 space-y-3">
+            <div className="flex items-end gap-2">
+              <div className="h-3 w-1/3 rounded bg-foreground/15" />
+              <div className="ml-auto h-2 w-16 rounded bg-foreground/10" />
+            </div>
+            <div className="h-32 rounded bg-foreground/[0.07]" />
+            <div className="grid grid-cols-3 gap-2">
+              <div className="h-8 rounded bg-foreground/[0.07]" />
+              <div className="h-8 rounded bg-foreground/[0.07]" />
+              <div className="h-8 rounded bg-foreground/[0.07]" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

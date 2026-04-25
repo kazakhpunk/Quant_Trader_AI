@@ -44,8 +44,6 @@ const PANELS: FeaturePanelData[] = [
     total: 4,
     title: "Fundamental Analysis",
     lede: "Earnings, ratios, and financials parsed automatically.",
-    imageSrc: "/mac-light.png",
-    imageDarkSrc: "/mac-dark.png",
     imageAlt: "Fundamental analysis dashboard",
     callouts: [
       { icon: PieChartIcon, label: "P/E, P/B, ROIC scoring", detail: "Standard valuation ratios computed across the universe." },
@@ -58,8 +56,6 @@ const PANELS: FeaturePanelData[] = [
     total: 4,
     title: "Sentiment Analysis",
     lede: "News and social sentiment measured in real-time.",
-    imageSrc: "/mac-light.png",
-    imageDarkSrc: "/mac-dark.png",
     imageAlt: "Sentiment analysis dashboard",
     callouts: [
       { icon: Sparkles, label: "NLP-driven sentiment scoring", detail: "Article and post text classified for tone and stance." },
@@ -72,8 +68,6 @@ const PANELS: FeaturePanelData[] = [
     total: 4,
     title: "Paper / Live Trading",
     lede: "Practice risk-free, then go live with one click.",
-    imageSrc: "/mac-light.png",
-    imageDarkSrc: "/mac-dark.png",
     imageAlt: "Paper and live trading dashboard",
     callouts: [
       { icon: AlarmClockIcon, label: "Paper trading sandbox", detail: "Test strategies with simulated fills before risking capital." },
@@ -125,8 +119,11 @@ function HorizontalTrack() {
   // Each panel takes 25% of the track; we slide from 0 to -75% (4 panels × 100vw).
   const endX = `-${((PANEL_COUNT - 1) / PANEL_COUNT) * 100}%`;
   const x = useTransform(scrollYProgress, [0, 1], ["0%", endX]);
+  // Active index is whichever panel is currently centered. Mapping is linear
+  // 0→0%, 1/(N-1)→-1·step, …, 1→-(N-1)·step (where step = 100%/N), so panel k
+  // is centered at scrollYProgress = k/(N-1). Round to track the nearest panel.
   const activeIndex = useTransform(scrollYProgress, (v) =>
-    Math.min(PANEL_COUNT - 1, Math.floor(v * PANEL_COUNT)),
+    Math.min(PANEL_COUNT - 1, Math.max(0, Math.round(v * (PANEL_COUNT - 1)))),
   );
   const [active, setActive] = useState(0);
 

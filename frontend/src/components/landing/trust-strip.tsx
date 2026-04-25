@@ -63,7 +63,7 @@ function CountUp({ to, suffix }: { to: number; suffix?: string }) {
 
 export function TrustStrip() {
   return (
-    <section className="border-y border-border/40 py-12">
+    <section className="border-b border-border/40 py-12">
       <div className="container">
         <p className="text-center text-xs uppercase tracking-widest text-muted-foreground">
           Built for serious traders

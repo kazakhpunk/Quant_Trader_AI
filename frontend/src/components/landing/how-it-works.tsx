@@ -31,26 +31,28 @@ export function HowItWorks() {
           </h2>
         </Reveal>
 
-        <ol className="mt-16 grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
-          {STEPS.map((s, idx) => (
-            <Reveal
-              key={s.number}
-              delay={idx * 0.05}
-              as="li"
-              className="relative"
-            >
-              {idx < STEPS.length - 1 && (
-                <span
-                  aria-hidden
-                  className="absolute left-full top-6 hidden h-px w-full -translate-x-4 border-t border-dashed border-border/60 md:block"
-                />
-              )}
-              <div className="text-5xl font-semibold text-primary/30">{s.number}</div>
-              <h3 className="mt-3 text-xl font-semibold">{s.title}</h3>
-              <p className="mt-2 text-muted-foreground">{s.description}</p>
-            </Reveal>
-          ))}
-        </ol>
+        <div className="relative mt-16">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute left-0 right-0 top-7 hidden h-px border-t border-dashed border-border/60 md:block"
+          />
+          <ol className="relative grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
+            {STEPS.map((s, idx) => (
+              <Reveal
+                key={s.number}
+                delay={idx * 0.05}
+                as="li"
+                className="relative"
+              >
+                <div className="inline-flex items-center justify-center rounded-md bg-background pr-3 text-5xl font-semibold leading-none text-primary/30">
+                  {s.number}
+                </div>
+                <h3 className="mt-4 text-xl font-semibold">{s.title}</h3>
+                <p className="mt-2 text-muted-foreground">{s.description}</p>
+              </Reveal>
+            ))}
+          </ol>
+        </div>
       </div>
     </section>
   );

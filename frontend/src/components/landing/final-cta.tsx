@@ -6,16 +6,16 @@ import { Reveal } from "./reveal";
 
 export function FinalCTA() {
   return (
-    <section className="relative overflow-hidden py-32">
+    <section className="sticky top-0 -z-10 flex h-screen items-center justify-center overflow-hidden bg-background">
       <CursorGrid />
       <div className="container relative z-10 mx-auto max-w-3xl text-center">
         <Reveal>
-          <h2 className="text-4xl font-semibold tracking-tight md:text-6xl">
+          <h2 className="text-balance text-4xl font-semibold tracking-tight md:text-6xl">
             Start trading smarter today.
           </h2>
         </Reveal>
         <Reveal delay={0.05}>
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+          <p className="mx-auto mt-6 max-w-xl text-balance text-lg text-muted-foreground">
             Plug in your broker, let the engine watch the market, and act on signals you trust.
           </p>
         </Reveal>
