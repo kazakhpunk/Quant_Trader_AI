@@ -78,28 +78,30 @@ export default function HomePage() {
               </Button>
             </div>
           </section>
-          <Link
-            href="/trade"
-            className="flex justify-center relative mt-8 cursor-pointer hover:opacity-90 transition-opacity duration-300"
-            aria-label="Open trading dashboard"
-          >
-            <Image
-              src="/mac-light.png"
-              width={800}
-              height={450}
-              alt="demo"
-              priority
-              className="border rounded-xl shadow-lg dark:hidden w-full max-w-[800px]"
-            />
-            <Image
-              src="/mac-dark.png"
-              width={800}
-              height={450}
-              alt="demo-dark"
-              priority
-              className="border border-zinc-600 rounded-xl shadow-lg hidden dark:block dark:shadow-gray-500/5 w-full max-w-[800px]"
-            />
-            <div className="aspect-[800/450] max-w-[800px] absolute inset-0 mx-auto pointer-events-none">
+          <div className="relative mt-8 flex justify-center">
+            <a
+              href="/trade"
+              aria-label="Open trading dashboard"
+              className="relative block w-full max-w-[800px] cursor-pointer hover:opacity-90 transition-opacity duration-300"
+            >
+              <Image
+                src="/mac-light.png"
+                width={800}
+                height={450}
+                alt="demo"
+                priority
+                className="border rounded-xl shadow-lg dark:hidden w-full"
+              />
+              <Image
+                src="/mac-dark.png"
+                width={800}
+                height={450}
+                alt="demo-dark"
+                priority
+                className="border border-zinc-600 rounded-xl shadow-lg hidden dark:block dark:shadow-gray-500/5 w-full"
+              />
+            </a>
+            <div className="aspect-[800/450] max-w-[800px] w-full absolute inset-0 mx-auto pointer-events-none">
               <Image
                 src="/phone-light.png"
                 width={180}
@@ -115,7 +117,7 @@ export default function HomePage() {
                 className="border border-zinc-600 rounded-xl absolute -bottom-4 -right-8 hidden dark:lg:block shadow-lg"
               />
             </div>
-          </Link>
+          </div>
         </div>
 
         <section id="about" className="py-12 sm:py-24 mx-8 sm:mx-32 my-24">
