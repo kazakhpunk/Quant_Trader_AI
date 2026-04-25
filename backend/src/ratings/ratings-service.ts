@@ -70,7 +70,6 @@ export class RatingsService {
         byTicker[t].metrics.technical = {
           rsi: doc.rsi14,
           ma50: doc.sma50,
-          ma200: doc.sma20,
         };
       }
     }
