@@ -7,9 +7,9 @@ const isProtectedRoute = createRouteMatcher([
   '/analysis(.*)',
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+export default clerkMiddleware((auth, req) => {
   if (isProtectedRoute(req)) {
-    await auth.protect({
+    auth().protect({
       unauthenticatedUrl: new URL('/signin', req.url).toString(),
     });
   }
