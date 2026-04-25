@@ -1,16 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "../ui/card";
-import { FaDollarSign, FaChartLine, FaExchangeAlt } from "react-icons/fa";
 import { CircularProgress } from "@mui/material";
 import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
+import { cn } from "@/lib/utils";
 
 interface AccountData {
   portfolio_value: number;
   cash: number;
-  // Add other relevant fields from the account object
 }
 
 interface PositionData {
@@ -20,7 +18,6 @@ interface PositionData {
   current_price: number;
   market_value: number;
   unrealized_pl: number;
-  // Add other relevant fields from the position object
 }
 
 interface OrderData {
@@ -30,7 +27,6 @@ interface OrderData {
   qty: number;
   filled_qty: number;
   status: string;
-  // Add other relevant fields from the order object
 }
 
 interface DashboardData {
@@ -55,23 +51,36 @@ const fetchDashboardData = async (
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        isLive: false,
-      }),
+      body: JSON.stringify({ isLive: false }),
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch dashboard data");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch dashboard data");
     const data = await response.json();
-    console.log("Dashboard data:", data);
     return data;
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     return null;
   }
 };
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value);
+
+const formatSignedCurrency = (value: number) => {
+  const formatted = formatCurrency(Math.abs(value));
+  if (value > 0) return `+${formatted}`;
+  if (value < 0) return `−${formatted}`;
+  return formatted;
+};
+
+const formatPercent = (value: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: 2,
+    signDisplay: "exceptZero",
+  }).format(value / 100);
 
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -82,7 +91,6 @@ const Dashboard = () => {
     const loadData = async () => {
       const token = localStorage.getItem("alpaca_access_token");
       if (!token) {
-        console.error("No token found");
         setLoading(false);
         setData(null);
         return;
@@ -91,13 +99,12 @@ const Dashboard = () => {
       setData(dashboardData);
       setLoading(false);
     };
-
     loadData();
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex h-[60vh] items-center justify-center">
         <CircularProgress />
       </div>
     );
@@ -105,177 +112,284 @@ const Dashboard = () => {
 
   if (!data || !isSignedIn) {
     return (
-      <div className="flex justify-center mt-8 min-h-screen px-4 text-lg text-center">
-        <div>
-          <div className="inline md:inline-flex items-center whitespace-nowrap">
-            <span>Please check our</span>
-            <Link href="/trade">
-              <span className="mx-1 text-blue-500 underline">Trading</span>
-            </Link>
-            <span className="hidden md:inline">
-              page. Dashboard will load after first trade!
-            </span>
-          </div>
-          <div className="inline md:hidden">
-            <span>page.</span>
-            <br />
-            <span className="block">
-              Dashboard will load after first trade!
-            </span>
-          </div>
+      <div className="mx-auto max-w-md px-4 py-24 text-center">
+        <h2 className="text-2xl font-semibold tracking-tight">No data yet</h2>
+        <p className="mt-3 text-muted-foreground">
+          Place your first trade to populate the dashboard.
+        </p>
+        <div className="mt-6">
+          <Link
+            href="/trade"
+            className="inline-flex items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+          >
+            Go to Trade →
+          </Link>
         </div>
       </div>
     );
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(value);
-  };
-
-  const formatPercentage = (value: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "percent",
-      minimumFractionDigits: 2,
-    }).format(value / 100);
-  };
+  const positions = data.positions.filter((p) => p.unrealized_pl > -0.02);
+  const totalUnrealized = positions.reduce((sum, p) => sum + p.unrealized_pl, 0);
+  const totalMarketValue = positions.reduce((sum, p) => sum + p.market_value, 0);
+  const totalUnrealizedPct = totalMarketValue
+    ? (totalUnrealized / totalMarketValue) * 100
+    : 0;
+  const orders = data.orders ?? [];
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-        <Card className="shadow-md w-full">
-          <CardHeader className="flex items-center">
-            <FaDollarSign className="mr-2" />
-            <span className="font-bold">Total Account Value</span>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold pl-12">
-            {formatCurrency(data.account.portfolio_value)}
-          </CardContent>
-        </Card>
-        <Card className="shadow-md w-full">
-          <CardHeader className="flex items-center">
-            <FaDollarSign className="mr-2" />
-            <span className="font-bold">Available Cash</span>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold pl-12">
-            {formatCurrency(data.account.cash)}
-          </CardContent>
-        </Card>
-        <Card className="shadow-md col-span-1 md:col-span-2 lg:col-span-3">
-          <CardHeader className="flex items-center">
-            <FaChartLine className="mr-2" />
-            <span className="font-bold">Open Positions</span>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="min-w-full ml-3">
-                <thead>
-                  <tr className="text-left">
-                    <th className="px-4 py-2">Symbol</th>
-                    <th className="px-4 py-2">Quantity</th>
-                    <th className="px-4 py-2">Entry Price</th>
-                    <th className="px-4 py-2">Current Price</th>
-                    <th className="px-4 py-2">Market Value</th>
-                    <th className="px-4 py-2">Absolute P&L</th>
-                    <th className="px-4 py-2">Relative P&L%</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.positions
-                    .filter((position) => position.unrealized_pl > -0.02)
-                    .map((position) => (
-                      <tr key={position.symbol}>
-                        <td className="px-4 py-2">{position.symbol}</td>
-                        <td className="px-4 py-2">{position.qty}</td>
-                        <td className="px-4 py-2">
-                          {formatCurrency(position.avg_entry_price)}
-                        </td>
-                        <td className="px-4 py-2">
-                          {formatCurrency(position.current_price)}
-                        </td>
-                        <td className="px-4 py-2">
-                          {formatCurrency(position.market_value)}
-                        </td>
-                        <td
-                          className={`px-4 py-2 font-mono ${
-                            position.unrealized_pl >= 0
-                              ? "text-green-600"
-                              : "text-red-600 relative"
-                          }`}
-                        >
-                          <div
-                            className={`${
-                              position.unrealized_pl < 0 &&
-                              "absolute -left-2 px-4 py-2 top-0"
-                            } flex items-center space-x-1`}
-                          >
-                            {formatCurrency(position.unrealized_pl)}
-                          </div>
-                        </td>
-                        <td
-                          className={`px-4 py-2 font-mono ${
-                            position.unrealized_pl >= 0
-                              ? "text-green-600"
-                              : "text-red-600 relative"
-                          }`}
-                        >
-                          <div
-                            className={`${
-                              position.unrealized_pl < 0 &&
-                              "absolute -left-2 px-4 py-2 top-0"
-                            } flex items-center space-x-1`}
-                          >
-                            {formatPercentage(
-                              position.unrealized_pl / position.market_value
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-        {data.orders && (
-          <Card className="shadow-md col-span-1 md:col-span-2 lg:col-span-3">
-            <CardHeader className="flex items-center">
-              <FaExchangeAlt className="mr-2" />
-              <span className="font-bold">Open Orders</span>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="min-w-full ml-3">
-                  <thead>
-                    <tr className="text-left">
-                      <th className="px-4 py-2">Symbol</th>
-                      <th className="px-4 py-2">Order Type</th>
-                      <th className="px-4 py-2">Quantity</th>
-                      <th className="px-4 py-2">Filled Quantity</th>
-                      <th className="px-4 py-2">Status</th>
+    <div className="mx-auto w-full max-w-7xl space-y-12 px-2 py-6 md:px-4 md:py-10">
+      {/* KPI strip */}
+      <section>
+        <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border/60 md:grid-cols-4">
+          <Kpi
+            label="Total account value"
+            value={formatCurrency(data.account.portfolio_value)}
+            className="border-b border-r border-border/60 md:border-b-0"
+          />
+          <Kpi
+            label="Available cash"
+            value={formatCurrency(data.account.cash)}
+            className="border-b border-border/60 md:border-b-0 md:border-r"
+          />
+          <Kpi
+            label="Unrealized P&L"
+            value={formatSignedCurrency(totalUnrealized)}
+            sub={formatPercent(totalUnrealizedPct)}
+            tone={totalUnrealized >= 0 ? "positive" : "negative"}
+            className="border-r border-border/60"
+          />
+          <Kpi
+            label="Open positions"
+            value={positions.length.toString()}
+            sub={`${positions.length === 1 ? "asset" : "assets"} held`}
+          />
+        </div>
+      </section>
+
+      {/* Open positions */}
+      <section>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">
+            Open positions
+          </h2>
+          <span className="font-mono text-xs text-muted-foreground">
+            {positions.length}{" "}
+            {positions.length === 1 ? "position" : "positions"}
+          </span>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-lg border border-border/60">
+          <table className="w-full table-auto">
+            <thead className="bg-muted/30">
+              <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Symbol</th>
+                <th className="px-4 py-3 text-right font-medium">Qty</th>
+                <th className="hidden px-4 py-3 text-right font-medium md:table-cell">
+                  Entry
+                </th>
+                <th className="hidden px-4 py-3 text-right font-medium md:table-cell">
+                  Current
+                </th>
+                <th className="hidden px-4 py-3 text-right font-medium lg:table-cell">
+                  Market value
+                </th>
+                <th className="px-4 py-3 text-right font-medium">P&amp;L</th>
+                <th className="hidden px-4 py-3 text-right font-medium sm:table-cell">
+                  %
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {positions.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    className="px-4 py-12 text-center text-sm text-muted-foreground"
+                  >
+                    No open positions yet.
+                  </td>
+                </tr>
+              ) : (
+                positions.map((p) => {
+                  const pct = p.market_value
+                    ? (p.unrealized_pl / p.market_value) * 100
+                    : 0;
+                  const positive = p.unrealized_pl >= 0;
+                  return (
+                    <tr
+                      key={p.symbol}
+                      className="transition-colors duration-150 hover:bg-muted/30"
+                    >
+                      <td className="px-4 py-3 font-medium">{p.symbol}</td>
+                      <td className="px-4 py-3 text-right font-mono tabular-nums">
+                        {p.qty}
+                      </td>
+                      <td className="hidden px-4 py-3 text-right font-mono tabular-nums md:table-cell">
+                        {formatCurrency(p.avg_entry_price)}
+                      </td>
+                      <td className="hidden px-4 py-3 text-right font-mono tabular-nums md:table-cell">
+                        {formatCurrency(p.current_price)}
+                      </td>
+                      <td className="hidden px-4 py-3 text-right font-mono tabular-nums lg:table-cell">
+                        {formatCurrency(p.market_value)}
+                      </td>
+                      <td
+                        className={cn(
+                          "px-4 py-3 text-right font-mono tabular-nums",
+                          positive
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        {formatSignedCurrency(p.unrealized_pl)}
+                      </td>
+                      <td
+                        className={cn(
+                          "hidden px-4 py-3 text-right font-mono tabular-nums sm:table-cell",
+                          positive
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400"
+                        )}
+                      >
+                        {formatPercent(pct)}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {data.orders.map((order) => (
-                      <tr key={order.id}>
-                        <td className="px-4 py-2">{order.symbol}</td>
-                        <td className="px-4 py-2">buy</td>
-                        <td className="px-4 py-2">{order.qty}</td>
-                        <td className="px-4 py-2">{order.filled_qty}</td>
-                        <td className="px-4 py-2">{order.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Open orders */}
+      <section>
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold tracking-tight">Open orders</h2>
+          <span className="font-mono text-xs text-muted-foreground">
+            {orders.length} {orders.length === 1 ? "order" : "orders"}
+          </span>
+        </div>
+        <div className="mt-4 overflow-hidden rounded-lg border border-border/60">
+          <table className="w-full table-auto">
+            <thead className="bg-muted/30">
+              <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="px-4 py-3 font-medium">Symbol</th>
+                <th className="px-4 py-3 font-medium">Type</th>
+                <th className="px-4 py-3 text-right font-medium">Qty</th>
+                <th className="hidden px-4 py-3 text-right font-medium md:table-cell">
+                  Filled
+                </th>
+                <th className="px-4 py-3 text-right font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {orders.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={5}
+                    className="px-4 py-12 text-center text-sm text-muted-foreground"
+                  >
+                    No open orders.
+                  </td>
+                </tr>
+              ) : (
+                orders.map((o) => (
+                  <tr
+                    key={o.id}
+                    className="transition-colors duration-150 hover:bg-muted/30"
+                  >
+                    <td className="px-4 py-3 font-medium">{o.symbol}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full border border-border/60 bg-background px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Buy
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono tabular-nums">
+                      {o.qty}
+                    </td>
+                    <td className="hidden px-4 py-3 text-right font-mono tabular-nums md:table-cell">
+                      {o.filled_qty}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <StatusBadge status={o.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 };
+
+function Kpi({
+  label,
+  value,
+  sub,
+  tone = "default",
+  className,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  tone?: "positive" | "negative" | "default";
+  className?: string;
+}) {
+  return (
+    <div className={cn("p-5 md:p-6", className)}>
+      <p className="text-xs uppercase tracking-widest text-muted-foreground">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-3 text-2xl font-semibold tabular-nums tracking-tight md:text-3xl",
+          tone === "positive" && "text-emerald-600 dark:text-emerald-400",
+          tone === "negative" && "text-rose-600 dark:text-rose-400"
+        )}
+      >
+        {value}
+      </p>
+      {sub && (
+        <p
+          className={cn(
+            "mt-1 font-mono text-xs",
+            tone === "positive" && "text-emerald-600 dark:text-emerald-400",
+            tone === "negative" && "text-rose-600 dark:text-rose-400",
+            tone === "default" && "text-muted-foreground"
+          )}
+        >
+          {sub}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const s = status.toLowerCase();
+  let cls =
+    "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground";
+  if (s === "filled" || s === "closed") {
+    cls =
+      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300";
+  } else if (s === "canceled" || s === "rejected" || s === "expired") {
+    cls = "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300";
+  } else if (s === "new" || s === "accepted" || s === "pending_new") {
+    cls = "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300";
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+        cls
+      )}
+    >
+      {status.replace(/_/g, " ")}
+    </span>
+  );
+}
 
 export default Dashboard;
