@@ -82,8 +82,8 @@ for global UI state; default to context if no store exists yet).
 - Order type: `Market` / `Limit` segmented control
   - When `Limit`, a `Limit price` input appears (defaults to current price, ±1% guidance text)
 - Time-in-force: `Day` / `GTC`
-- Live vs Paper toggle (inherits from `/trade` setting via shared state, can be overridden
-  per-order)
+- Live vs Paper toggle (defaults to the user's last-used choice, persisted in localStorage;
+  can be overridden per-order)
 - **Risk controls** (collapsible, collapsed by default):
   - Stop-loss `%` (default empty — no bracket if both fields empty)
   - Take-profit `%`
@@ -114,8 +114,9 @@ same engine concept, four explicit steps so the user knows what they're committi
   across all picks"* (kills "is it per-stock?" ambiguity). Right of input: `$1,240 available`.
 - Presets: `25% · 50% · 75% · Max` (replace the old `$10 / $25 / $50 / $100` chips, which
   were dollar-capped).
-- **Risk caps row** — three compact inputs in one strip:
+- **Risk caps row** — four compact inputs in one strip:
   - `Max position size`: `% of allocation per ticker` (default 20%)
+  - `Max positions`: integer cap on how many tickers the engine opens (default 10)
   - `Per-position stop-loss`: `%` (default 3%)
   - `Per-position take-profit`: `%` (default 5%)
 - **Account-level guard** (separate row, single input):
@@ -177,8 +178,8 @@ that dimension's score, with a few raw metrics specific to that dimension. Examp
 - **Price**: `Ticker · Score · 1d % · 5d % · 30d % · Trade`
 - **Volatility**: `Ticker · Score · 30d σ · ATR · Beta · Trade`
 
-(Exact metrics per dimension to be finalized when the rating endpoint is built — depends on
-what's in the analysis-service collections today.)
+These are the v1 columns. If a metric isn't yet computed by the analysis service, the cell
+renders `—` and an item is added to the implementation plan to backfill it.
 
 Every row in every table opens the `OrderDrawer` on click.
 
@@ -263,15 +264,16 @@ type EngineRequest = {
   isLiveTrading: boolean;
   isSentimentEnabled: boolean;
 
-  // new
+  // new — all optional; backend applies defaults so existing callers keep working
   dryRun?: boolean;                  // step 2 preview
-  direction?: 'long' | 'short' | 'both';
-  skipHeld?: boolean;
-  caps: {
-    maxPositionPct: number;          // default 20
-    perPositionStopLossPct: number;  // default 3
-    perPositionTakeProfitPct: number;// default 5
-    maxDrawdownPct: number;          // default 10 — account-level guard
+  direction?: 'long' | 'short' | 'both';   // default 'long'
+  skipHeld?: boolean;                       // default true
+  caps?: {
+    maxPositionPct?: number;          // default 20
+    maxPositions?: number;            // default 10
+    perPositionStopLossPct?: number;  // default 3
+    perPositionTakeProfitPct?: number;// default 5
+    maxDrawdownPct?: number;          // default 10 — account-level guard
   };
 };
 ```
