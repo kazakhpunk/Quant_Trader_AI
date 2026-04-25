@@ -11,22 +11,20 @@ import { MotionProvider } from "@/components/landing/motion-provider";
 export default function HomePage() {
   return (
     <MotionProvider>
-      <div className="flex min-h-screen flex-col">
+      {/* Main content card sits on z-10 with an opaque background and slides up,
+          revealing the footer that's pinned to the viewport bottom behind it. */}
+      <div className="relative z-10 bg-background">
         <SiteHeader />
-        <main id="main" className="flex-1">
+        <main id="main">
           <Hero />
           <TrustStrip />
           <About />
           <FeatureCarousel />
           <HowItWorks />
-        </main>
-        {/* FinalCTA + footer share a wrapper so the CTA can stay sticky-pinned
-            at top while the footer scrolls up over it. */}
-        <div className="relative">
           <FinalCTA />
-          <SiteFooter />
-        </div>
+        </main>
       </div>
+      <SiteFooter />
     </MotionProvider>
   );
 }

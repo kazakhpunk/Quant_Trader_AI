@@ -4,7 +4,7 @@ import { GitHubLogoIcon, InstagramLogoIcon } from "@radix-ui/react-icons";
 
 export function SiteFooter() {
   return (
-    <footer className="relative border-t border-border/40 bg-background">
+    <footer className="sticky bottom-0 z-0 flex min-h-[420px] flex-col justify-end border-t border-border/40 bg-muted/40">
       <div className="container py-12">
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           <div>
