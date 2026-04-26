@@ -26,6 +26,7 @@
     "express-rate-limit": "^7.3.1",
     "express-session": "^1.18.0",
     "express-sessions": "^1.0.6",
+    "jstat": "^1.9.6",
     "mongodb": "^6.8.0",
     "mongoose": "^8.4.4",
     "morgan": "^1.10.0",
@@ -36,6 +37,7 @@
     "puppeteer": "^22.12.1",
     "sentiment": "^5.0.2",
     "session": "^0.1.0",
+    "simple-statistics": "^7.8.9",
     "ws": "^8.17.1",
     "yahoo-finance2": "^2.11.3"
   },
