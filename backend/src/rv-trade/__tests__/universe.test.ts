@@ -36,4 +36,16 @@ describe('universe', () => {
     expect(pairs.length).toBeGreaterThan(20);
     expect(pairs.length).toBeLessThan(120);
   });
+
+  it('every country belongs to at least one bucket', () => {
+    for (const c of UNIVERSE) {
+      expect(bucketsForCountry(c).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('allBuckets enumerates all 8 bucket values', () => {
+    expect(allBuckets).toHaveLength(8);
+    const required = ['oilExporters','commodityExporters','latamIG','latamHY','cee','gcc','asiaIG','frontier'];
+    for (const b of required) expect(allBuckets).toContain(b);
+  });
 });
