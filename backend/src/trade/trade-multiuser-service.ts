@@ -262,9 +262,33 @@ class TradeService {
     const maxPerPos = (caps.maxPositionPct / 100) * req.amount;
     const perPosAlloc = Math.min(evenAlloc, maxPerPos);
 
+    // Preview pricing: use the close stored in technicalData by the analysis
+    // pipeline. Avoids N Alpaca round-trips and works for users without a
+    // brokerage connected. Live execution still uses getLatestPrice.
+    const tickers = pool.map((c) => c.ticker);
+    const techDocs = tickers.length
+      ? await this.db
+          .collection("technicalData")
+          .find({ ticker: { $in: tickers } })
+          .project({ ticker: 1, close: 1, _id: 0 })
+          .toArray()
+      : [];
+    const closeByTicker = new Map<string, number>(
+      techDocs
+        .filter((d: any) => typeof d.close === "number" && d.close > 0)
+        .map((d: any) => [d.ticker as string, d.close as number])
+    );
+
     const rows: EnginePreviewRow[] = [];
     for (const c of pool) {
-      const price = await this.getLatestPrice(c.ticker, req.email, req.isLiveTrading);
+      let price = closeByTicker.get(c.ticker);
+      if (price == null) {
+        try {
+          price = await this.getLatestPrice(c.ticker, req.email, req.isLiveTrading);
+        } catch {
+          continue; // skip tickers we can't price at preview time
+        }
+      }
       const qty = parseFloat((perPosAlloc / price).toFixed(2));
       rows.push({
         ticker: c.ticker,

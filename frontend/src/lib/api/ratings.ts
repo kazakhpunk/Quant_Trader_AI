@@ -6,6 +6,13 @@ export type Dimension = (typeof DIMENSIONS)[number];
 export const VISIBLE_DIMENSIONS = DIMENSIONS;
 export type VisibleDimension = (typeof VISIBLE_DIMENSIONS)[number];
 
+// Dimensions that contribute to the composite score. Price + volatility are
+// shown as informational metrics but excluded from the composite — per industry
+// convention, price returns belong inside "technical" and volatility is a risk
+// overlay used for sizing rather than a stock-picking signal.
+export const COMPOSITE_DIMENSIONS = ["technical", "fundamental", "sentiment"] as const;
+export type CompositeDimension = (typeof COMPOSITE_DIMENSIONS)[number];
+
 export const DIRECTIONS = ["long", "short"] as const;
 export type Direction = (typeof DIRECTIONS)[number];
 

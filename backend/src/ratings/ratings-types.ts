@@ -7,11 +7,19 @@ export const DIMENSIONS = [
 ] as const;
 export type Dimension = (typeof DIMENSIONS)[number];
 
-// Dimensions that currently have data in MongoDB. All five are wired up now —
-// price + volatility derive from the same historical bars the technical pipeline
-// already fetches; sentiment runs over the full universe via persistAllSentiment().
+// Dimensions surfaced in the UI tables. All five render columns + sections so
+// you can sort and inspect the underlying metrics.
 export const VISIBLE_DIMENSIONS = DIMENSIONS;
 export type VisibleDimension = (typeof VISIBLE_DIMENSIONS)[number];
+
+// Dimensions that contribute to the composite score. Per industry convention
+// (Zacks / Morningstar / Stockopedia / FactSet practitioner models), price
+// returns are typically subsumed by "technical" and volatility is treated as a
+// risk overlay used for position sizing — not as a stock-picking score.
+// Keeping price + volatility visible as descriptive metrics but excluded from
+// the composite average.
+export const COMPOSITE_DIMENSIONS = ["technical", "fundamental", "sentiment"] as const;
+export type CompositeDimension = (typeof COMPOSITE_DIMENSIONS)[number];
 
 export type DimensionScores = Record<Dimension, number>; // each 0..100
 

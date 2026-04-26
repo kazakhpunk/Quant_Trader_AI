@@ -777,69 +777,46 @@ class AnalysisService {
     };
   }
 
+  // Sentiment thresholds: the `sentiment` npm package returns small per-article
+  // integer scores (~ -3..+3) which we average — so post-aggregation values
+  // cluster near zero (observed range across the universe: -1.5 .. 3.1).
+  // Require at least neutral-positive tilt for longs and neutral-negative for shorts.
+  private static readonly LONG_SENTIMENT_MIN = 0;
+  private static readonly SHORT_SENTIMENT_MAX = 0;
+
   public async analyzeWithSentiment(): Promise<void> {
     const { longCandidates, shortCandidates } = await this.analyzeResults();
-    const sentimentData = await this.getAllSentimentData(
-      longCandidates
-        .map((c) => c.ticker)
-        .concat(shortCandidates.map((c) => c.ticker))
+
+    // Reuse the per-ticker sentiment that persistAllSentiment already wrote.
+    // Falls back to a fresh fetch only for tickers that aren't there yet.
+    const sentimentDocs = await this.db.collection("sentimentData").find({}).toArray();
+    const sentMap = new Map<string, number>(
+      sentimentDocs
+        .filter((d: any) => typeof d.sentiment === "number")
+        .map((d: any) => [d.ticker as string, d.sentiment as number])
     );
 
-    // console.log('Long candidates:', longCandidates);
-    // console.log('Short candidates:', shortCandidates);
-    // console.log('Sentiment data:', sentimentData);
+    const attachSentiment = (c: any): { sentiment: number } & typeof c => ({
+      ...c,
+      sentiment: sentMap.get(c.ticker) ?? 0,
+    });
 
     const longCandidatesWithSentiment = longCandidates
-      .map((candidate, index) => {
-        const articles = sentimentData[index]?.articles;
-        const sentiment = articles
-          ? articles
-              .map((article) => article.score)
-              .reduce((acc, val) => acc + val, 0) / articles.length
-          : 0;
-        if (sentiment > 15) {
-          return { ...candidate, sentiment };
-        }
-        return null;
-      })
-      .filter((candidate) => candidate !== null);
+      .map(attachSentiment)
+      .filter((c) => c.sentiment > AnalysisService.LONG_SENTIMENT_MIN);
 
     const shortCandidatesWithSentiment = shortCandidates
-      .map((candidate, index) => {
-        const articles = sentimentData[index + longCandidates.length]?.articles;
-        const sentiment = articles
-          ? articles
-              .map((article) => article.score)
-              .reduce((acc, val) => acc + val, 0) / articles.length
-          : 0;
-        if (sentiment < 20) {
-          return { ...candidate, sentiment };
-        }
-        return null;
-      })
-      .filter((candidate) => candidate !== null);
+      .map(attachSentiment)
+      .filter((c) => c.sentiment < AnalysisService.SHORT_SENTIMENT_MAX);
 
-    if (longCandidatesWithSentiment.length > 0) {
-      await this.saveCandidates("longCandidates", longCandidatesWithSentiment);
-    } else {
-      console.warn(
-        "No valid long candidates found with sentiment above threshold."
-      );
-    }
+    // Always replace the collection so stale entries are dropped even when
+    // the new filter yields zero results.
+    await this.saveCandidates("longCandidates", longCandidatesWithSentiment);
+    await this.saveCandidates("shortCandidates", shortCandidatesWithSentiment);
 
-    if (shortCandidatesWithSentiment.length > 0) {
-      await this.saveCandidates(
-        "shortCandidates",
-        shortCandidatesWithSentiment
-      );
-    } else {
-      console.warn(
-        "No valid short candidates found with sentiment below threshold."
-      );
-    }
-
-    console.log("Long candidates: ", longCandidatesWithSentiment);
-    console.log("Short candidates: ", shortCandidatesWithSentiment);
+    console.log(
+      `Candidates: ${longCandidatesWithSentiment.length} long, ${shortCandidatesWithSentiment.length} short`
+    );
   }
 
   private async saveCandidates(
@@ -848,7 +825,9 @@ class AnalysisService {
   ): Promise<void> {
     const collection = this.db.collection(collectionName);
     await collection.deleteMany({});
-    await collection.insertMany(candidates);
+    if (candidates.length > 0) {
+      await collection.insertMany(candidates);
+    }
   }
 
   public async getCandidatesFromDB(): Promise<{

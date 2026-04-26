@@ -5,6 +5,7 @@ import {
   DimensionScores,
   RatingRow,
   VISIBLE_DIMENSIONS,
+  COMPOSITE_DIMENSIONS,
 } from "./ratings-types";
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(100, n));
@@ -118,8 +119,8 @@ const emptyScores = (): DimensionScores => ({
 
 const compositeOf = (scores: DimensionScores): number =>
   Math.round(
-    VISIBLE_DIMENSIONS.reduce((s, d) => s + clamp01(scores[d]), 0) /
-      VISIBLE_DIMENSIONS.length
+    COMPOSITE_DIMENSIONS.reduce((s, d) => s + clamp01(scores[d]), 0) /
+      COMPOSITE_DIMENSIONS.length
   );
 
 export class RatingsService {

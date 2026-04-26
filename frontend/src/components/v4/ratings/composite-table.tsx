@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import { RatingRow, VISIBLE_DIMENSIONS, Dimension, Direction } from "@/lib/api/ratings";
+import { RatingRow, VISIBLE_DIMENSIONS, COMPOSITE_DIMENSIONS, Dimension, Direction } from "@/lib/api/ratings";
+
+const COMPOSITE_SET = new Set<Dimension>(COMPOSITE_DIMENSIONS);
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +55,12 @@ export function CompositeTable({
             <Th k="ticker" label="Ticker" />
             <Th k="composite" label="Composite" right />
             {VISIBLE_DIMENSIONS.map((d) => (
-              <Th key={d} k={d} label={d.slice(0, 4)} right />
+              <Th
+                key={d}
+                k={d}
+                label={COMPOSITE_SET.has(d) ? d.slice(0, 4) : `${d.slice(0, 4)}†`}
+                right
+              />
             ))}
             <th className="w-10" />
           </tr>
@@ -78,7 +85,13 @@ export function CompositeTable({
                 </div>
               </td>
               {VISIBLE_DIMENSIONS.map((d) => (
-                <td key={d} className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.scores[d]))}>
+                <td
+                  key={d}
+                  className={cn(
+                    "px-4 py-3 text-right font-mono tabular-nums",
+                    COMPOSITE_SET.has(d) ? scoreClass(r.scores[d]) : "text-muted-foreground"
+                  )}
+                >
                   {Math.round(r.scores[d])}
                 </td>
               ))}
@@ -87,6 +100,9 @@ export function CompositeTable({
           ))}
         </tbody>
       </table>
+      <p className="border-t border-border/60 bg-muted/10 px-4 py-2 text-[11px] text-muted-foreground">
+        † informational — shown for context but not included in the composite score
+      </p>
     </div>
   );
 }

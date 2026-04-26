@@ -113,10 +113,13 @@ export function MethodologyDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 font-medium">
-          <Info className="h-4 w-4" />
-          <span>How scores are calculated</span>
-        </Button>
+        <button
+          type="button"
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border/70 bg-background px-2.5 text-[11px] font-medium uppercase tracking-wider text-foreground shadow-sm transition hover:bg-muted/40"
+        >
+          <Info className="h-3.5 w-3.5" />
+          <span>How scores work</span>
+        </button>
       </DialogTrigger>
 
       <DialogContent className="max-w-3xl overflow-hidden border-border/60 p-0 sm:rounded-xl">
@@ -138,22 +141,26 @@ export function MethodologyDialog() {
               Methodology · §RT
             </p>
             <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-              composite = mean(5)
+              composite = mean(3)
             </p>
           </div>
           <h2 className="relative mt-3 text-3xl font-semibold tracking-tight md:text-[2.5rem] md:leading-[1.05]">
             How scores are calculated.
           </h2>
           <p className="relative mt-2 max-w-xl text-sm text-muted-foreground">
-            Every ticker gets a 0–100 composite from five equally-weighted dimensions.
-            Each dimension takes one raw metric, normalizes it to a 0–100 scale, and the
-            composite is their plain mean.
+            The composite (0–100) averages three equally-weighted dimensions:
+            <span className="text-foreground"> technical, fundamental, sentiment</span>.
+            Price and volatility are shown for context but excluded from the score —
+            per industry convention, price returns belong inside technical and
+            volatility is a risk overlay used for sizing, not picking.
           </p>
 
           {/* formula strip */}
           <div className="relative mt-6 grid gap-2 border-t border-border/40 pt-4 font-mono text-[11px] text-muted-foreground sm:grid-cols-[auto_1fr] sm:gap-x-4">
             <span className="uppercase tracking-wider text-foreground">composite</span>
-            <span>= round( (technical + fundamental + sentiment + price + volatility) ÷ 5 )</span>
+            <span>= round( (technical + fundamental + sentiment) ÷ 3 )</span>
+            <span className="uppercase tracking-wider text-foreground">price · vol</span>
+            <span>= shown as informational columns; do not affect the composite</span>
             <span className="uppercase tracking-wider text-foreground">missing data</span>
             <span>= dimension defaults to 50 (neutral) — neither helps nor hurts</span>
           </div>
