@@ -237,7 +237,32 @@ class TradeService {
       });
       const result: OrderResult = { ok: true, orderId: data.id, status: data.status };
       if (droppedBracket) {
-        result.note = "Bracket (stop/take-profit) skipped — fractional shares can't carry brackets on Alpaca.";
+        // Alpaca won't accept the bracket, so persist a soft bracket record.
+        // monitorAndManagePositions reads these and submits a market sell when
+        // the price crosses either threshold.
+        const refForBracket =
+          referencePrice ??
+          (req.orderType === "limit"
+            ? req.limitPrice ?? null
+            : await this.getLatestPrice(req.symbol, req.email, req.isLiveTrading).catch(() => null));
+        if (refForBracket != null) {
+          await this.db.collection("softBrackets").insertOne({
+            email: req.email,
+            symbol: req.symbol,
+            side: req.side,
+            entryPrice: refForBracket,
+            stopLossPct: req.stopLossPct ?? null,
+            takeProfitPct: req.takeProfitPct ?? null,
+            isLive: !!req.isLiveTrading,
+            orderId: data.id,
+            createdAt: new Date(),
+            isActive: true,
+          });
+          const sl = req.stopLossPct != null ? `Stop −${req.stopLossPct}%` : "";
+          const tp = req.takeProfitPct != null ? `Take-profit +${req.takeProfitPct}%` : "";
+          const parts = [sl, tp].filter(Boolean).join(" / ");
+          if (parts) result.note = `${parts} monitored by background poller.`;
+        }
       }
       return result;
     } catch (err: any) {
@@ -498,36 +523,57 @@ class TradeService {
       return { ok: true, positions: 0, actions: [] };
     }
 
+    // Soft brackets the engine wrote when Alpaca refused server-side brackets
+    // (fractional shares). One per (email, symbol, isLive); inactive once fired.
+    const softBrackets = await this.db
+      .collection("softBrackets")
+      .find({ email, isLive, isActive: true })
+      .toArray();
+    const brktBySymbol = new Map<string, any>(
+      softBrackets.map((b: any) => [b.symbol as string, b])
+    );
+
     const actions: { symbol: string; type: "stop-loss" | "take-profit"; price: number }[] = [];
-    const STOP_LOSS_THRESHOLD = 0.99;
-    const TAKE_PROFIT_THRESHOLD = 1.03;
 
     for (const position of positions) {
       const { symbol, qty, avg_entry_price } = position;
+      const brkt = brktBySymbol.get(symbol);
+      // Skip positions that don't have an explicit soft bracket — those were
+      // either opened with a server-side Alpaca bracket (which Alpaca handles
+      // itself) or with no exit at all (user choice).
+      if (!brkt) continue;
+
       const latestPrice = await this.getLatestPrice(symbol, email, isLive);
-
       const entry = parseFloat(avg_entry_price);
-      const stopLossPrice = entry * STOP_LOSS_THRESHOLD;
-      const takeProfitPrice = entry * TAKE_PROFIT_THRESHOLD;
+      const stopPct = typeof brkt.stopLossPct === "number" ? brkt.stopLossPct : null;
+      const takePct = typeof brkt.takeProfitPct === "number" ? brkt.takeProfitPct : null;
 
-      const sellOrder = (label: string, price: number) =>
-        this.limiter.schedule(() =>
-          axios.post(
-            `${apiUrl}/orders`,
-            { symbol, qty, side: "sell", type: "market", time_in_force: "day" },
-            { headers }
-          )
-        ).then(() => {
-          console.log(`${label} order placed for ${symbol} at ${price}`);
-        });
-
-      if (latestPrice <= stopLossPrice) {
-        await sellOrder("Stop-loss", stopLossPrice);
-        actions.push({ symbol, type: "stop-loss", price: stopLossPrice });
-      } else if (latestPrice >= takeProfitPrice) {
-        await sellOrder("Take-profit", takeProfitPrice);
-        actions.push({ symbol, type: "take-profit", price: takeProfitPrice });
+      let trigger: "stop-loss" | "take-profit" | null = null;
+      let triggerPrice = 0;
+      if (stopPct != null && latestPrice <= entry * (1 - stopPct / 100)) {
+        trigger = "stop-loss";
+        triggerPrice = +(entry * (1 - stopPct / 100)).toFixed(2);
+      } else if (takePct != null && latestPrice >= entry * (1 + takePct / 100)) {
+        trigger = "take-profit";
+        triggerPrice = +(entry * (1 + takePct / 100)).toFixed(2);
       }
+
+      if (!trigger) continue;
+
+      await this.limiter.schedule(() =>
+        axios.post(
+          `${apiUrl}/orders`,
+          { symbol, qty, side: "sell", type: "market", time_in_force: "day" },
+          { headers }
+        )
+      );
+      console.log(`${trigger} sell submitted for ${symbol} at ${triggerPrice}`);
+      actions.push({ symbol, type: trigger, price: triggerPrice });
+
+      await this.db.collection("softBrackets").updateOne(
+        { _id: brkt._id },
+        { $set: { isActive: false, closedAt: new Date(), closeReason: trigger } }
+      );
     }
 
     return { ok: true, positions: positions.length, actions };
