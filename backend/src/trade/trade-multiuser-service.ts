@@ -10,6 +10,7 @@ import {
 } from "./trade-types";
 import AnalysisService from "../analysis/analysis-service";
 import AuthService from "../auth/auth-service";
+import { RatingsService } from "../ratings/ratings-service";
 import { Db } from "mongodb";
 import cron from "node-cron";
 import Bottleneck from "bottleneck";
@@ -17,6 +18,7 @@ import { qstash } from "../qstash";
 
 class TradeService {
   private analysisService: AnalysisService;
+  private ratingsService: RatingsService;
   private db: Db;
   private limiter: Bottleneck;
   private authService: any;
@@ -25,6 +27,7 @@ class TradeService {
     this.db = db;
     this.authService = new AuthService(db);
     this.analysisService = new AnalysisService(db);
+    this.ratingsService = new RatingsService(db);
     this.limiter = new Bottleneck({
       minTime: 1000, // 1 second between each request
       maxConcurrent: 1, // Only one request at a time
@@ -258,10 +261,6 @@ class TradeService {
     pool = pool.slice(0, caps.maxPositions);
     const afterCap = pool.length;
 
-    const evenAlloc = pool.length ? req.amount / pool.length : 0;
-    const maxPerPos = (caps.maxPositionPct / 100) * req.amount;
-    const perPosAlloc = Math.min(evenAlloc, maxPerPos);
-
     // Preview pricing: use the close stored in technicalData by the analysis
     // pipeline. Avoids N Alpaca round-trips and works for users without a
     // brokerage connected. Live execution still uses getLatestPrice.
@@ -279,31 +278,70 @@ class TradeService {
         .map((d: any) => [d.ticker as string, d.close as number])
     );
 
-    const rows: EnginePreviewRow[] = [];
+    // Resolve prices first; drop tickers we can't price at preview time.
+    const resolved: { c: typeof pool[number]; price: number }[] = [];
     for (const c of pool) {
       let price = closeByTicker.get(c.ticker);
       if (price == null) {
         try {
           price = await this.getLatestPrice(c.ticker, req.email, req.isLiveTrading);
         } catch {
-          continue; // skip tickers we can't price at preview time
+          continue;
         }
       }
+      resolved.push({ c, price });
+    }
+
+    // Per-position allocation honors maxPositionPct as a hard ceiling: we
+    // never violate the user's stated concentration limit. If the pool is too
+    // small to deploy the full requested amount under that cap, the remainder
+    // stays as cash and is surfaced in the preview as `cashBuffer` so the UI
+    // can explain why total < requested.
+    const evenAlloc = resolved.length ? req.amount / resolved.length : 0;
+    const maxPerPos = (caps.maxPositionPct / 100) * req.amount;
+    const perPosAlloc = Math.min(evenAlloc, maxPerPos);
+
+    // Composite per ticker, direction-aware. RatingsService re-queries the
+    // source collections — fine for preview which runs only on user action.
+    const compositeByTicker = new Map<string, number>();
+    if (resolved.length) {
+      const wantedTickers = new Set(resolved.map((r) => r.c.ticker));
+      const allRatings = await this.ratingsService.getAll();
+      for (const rr of allRatings) {
+        if (!wantedTickers.has(rr.ticker)) continue;
+        compositeByTicker.set(
+          rr.ticker,
+          direction === "short" ? rr.compositeShort : rr.compositeLong
+        );
+      }
+    }
+
+    const rows: EnginePreviewRow[] = resolved.map(({ c, price }) => {
       const qty = parseFloat((perPosAlloc / price).toFixed(2));
-      rows.push({
+      return {
         ticker: c.ticker,
         side: c.side,
-        composite: 0,
+        composite: compositeByTicker.get(c.ticker) ?? 0,
         topSignals: c.sentiment != null ? [`Sent ${Math.round(c.sentiment * 100)}`] : [],
         allocation: +(qty * price).toFixed(2),
         qty,
         price,
-      });
-    }
+      };
+    });
+    const totalAllocated = +rows.reduce((s, r) => s + r.allocation, 0).toFixed(2);
+    const cashBuffer = +(req.amount - totalAllocated).toFixed(2);
+    // Buffer attributable specifically to the cap binding (vs qty rounding).
+    const capBindingBuffer = +Math.max(
+      0,
+      req.amount - resolved.length * maxPerPos
+    ).toFixed(2);
+
     return {
       rows,
-      totalAllocated: +rows.reduce((s, r) => s + r.allocation, 0).toFixed(2),
+      totalAllocated,
       totalRequested: req.amount,
+      cashBuffer,
+      capBindingBuffer,
       caps,
       diagnostics: {
         totalCandidates,

@@ -2,11 +2,16 @@ import TradeService from "../trade-multiuser-service";
 import { DEFAULT_CAPS } from "../trade-types";
 
 describe("previewTrades", () => {
-  // technicalData lookup in previewTrades returns no rows so the code falls
-  // back to getLatestPrice (which is stubbed to 100).
+  // Stub Mongo: every collection lookup returns nothing — previewTrades falls
+  // back to getLatestPrice (stubbed) for prices and the ratings service finds
+  // no source data so composites stay 0.
+  const emptyCursor = {
+    toArray: async () => [],
+    project: () => ({ toArray: async () => [] }),
+  };
   const fakeDb = {
     collection: () => ({
-      find: () => ({ project: () => ({ toArray: async () => [] }) }),
+      find: () => emptyCursor,
     }),
   } as any;
   const svc = new TradeService(fakeDb);

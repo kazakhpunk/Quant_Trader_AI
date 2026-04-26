@@ -1,15 +1,18 @@
 "use client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { EnginePreview } from "@/lib/api/engine";
+import { EnginePreview, EngineDiagnostics } from "@/lib/api/engine";
+import { getApiUrl } from "@/lib/utils";
 
 export function PreviewStep({
-  preview, stopPct, tpPct, onAdjust, onPlace, loading,
+  preview, stopPct, tpPct, onAdjust, onPlace, onRetry, loading,
 }: {
   preview: EnginePreview;
   stopPct: number;
   tpPct: number;
   onAdjust: () => void;
   onPlace: () => void;
+  onRetry?: () => void;
   loading: boolean;
 }) {
   return (
@@ -35,8 +38,8 @@ export function PreviewStep({
           <tbody className="divide-y divide-border/60">
             {preview.rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No tickers passed your filters. Try widening direction or disabling Skip held.
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <EmptyExplanation diag={preview.diagnostics} onRetry={onRetry} />
                 </td>
               </tr>
             ) : preview.rows.map((r) => (
@@ -58,6 +61,15 @@ export function PreviewStep({
         {" "}{preview.rows.length} positions ·
         {" "}Stop −{stopPct}% · Target +{tpPct}%
       </p>
+      {preview.capBindingBuffer > 0 && (
+        <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          ${preview.capBindingBuffer.toFixed(2)} held as cash because your{" "}
+          <span className="font-mono">max position {preview.caps.maxPositionPct}%</span> cap
+          limits {preview.rows.length} pick{preview.rows.length === 1 ? "" : "s"} to{" "}
+          ${(preview.caps.maxPositionPct * preview.totalRequested / 100).toFixed(2)} each.
+          Raise the cap in Adjust to deploy more.
+        </p>
+      )}
 
       <div className="mt-8 flex gap-3">
         <Button variant="outline" className="flex-1" onClick={onAdjust} disabled={loading}>Adjust</Button>
@@ -65,6 +77,72 @@ export function PreviewStep({
           {loading ? "Placing…" : `Place ${preview.rows.length} orders`}
         </Button>
       </div>
+    </div>
+  );
+}
+
+function EmptyExplanation({ diag, onRetry }: { diag: EngineDiagnostics; onRetry?: () => void }) {
+  const { totalCandidates, afterDirection, afterSentiment, afterSkipHeld, afterCap } = diag;
+  const [running, setRunning] = useState(false);
+  const [runErr, setRunErr] = useState<string | null>(null);
+
+  let headline = "No tickers passed your filters.";
+  let hint = "Try widening direction or disabling Skip held.";
+
+  if (totalCandidates === 0) {
+    headline = "No engine candidates available yet.";
+    hint = "The analysis pipeline hasn't produced any picks. Run analysis to scan the universe — this can take several minutes.";
+  } else if (afterDirection === 0) {
+    hint = "Your direction filter excluded everything. Try switching direction (long / short / both).";
+  } else if (afterSentiment === 0) {
+    hint = "All candidates were filtered out by the sentiment threshold. Disable Sentiment signals to include them.";
+  } else if (afterSkipHeld === 0) {
+    hint = "You already hold every candidate. Disable Skip held to allow adding to existing positions.";
+  } else if (afterCap === 0) {
+    hint = "Max positions cap is 0. Increase Max positions in Configure.";
+  }
+
+  const runAnalysis = async () => {
+    setRunning(true); setRunErr(null);
+    try {
+      const res = await fetch(`${getApiUrl()}/api/v1/update`, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      onRetry?.();
+    } catch (e: any) {
+      setRunErr(e.message || "Failed to start analysis");
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <p className="font-medium text-foreground">{headline}</p>
+      <p>{hint}</p>
+      {totalCandidates === 0 && (
+        <div className="flex justify-center pt-1">
+          <Button variant="outline" size="sm" onClick={runAnalysis} disabled={running}>
+            {running ? "Running analysis…" : "Run analysis now"}
+          </Button>
+        </div>
+      )}
+      {runErr && <p className="text-xs text-destructive">{runErr}</p>}
+      <div className="mx-auto max-w-md text-left text-xs font-mono text-muted-foreground">
+        <Row label="Candidates from analysis" v={totalCandidates} />
+        <Row label="After direction filter" v={afterDirection} />
+        <Row label="After sentiment filter" v={afterSentiment} />
+        <Row label="After skip-held filter" v={afterSkipHeld} />
+        <Row label="After max-positions cap" v={afterCap} />
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, v }: { label: string; v: number }) {
+  return (
+    <div className="flex items-center justify-between border-b border-border/30 py-1">
+      <span>{label}</span>
+      <span className="tabular-nums">{v}</span>
     </div>
   );
 }

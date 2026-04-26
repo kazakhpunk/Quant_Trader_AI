@@ -26,8 +26,21 @@ export interface EnginePreviewRow {
   ticker: string; side: "buy" | "sell"; composite: number;
   topSignals: string[]; allocation: number; qty: number; price: number;
 }
+export interface EngineDiagnostics {
+  totalCandidates: number;
+  afterDirection: number;
+  afterSentiment: number;
+  afterSkipHeld: number;
+  afterCap: number;
+}
 export interface EnginePreview {
-  rows: EnginePreviewRow[]; totalAllocated: number; totalRequested: number; caps: EngineCaps;
+  rows: EnginePreviewRow[];
+  totalAllocated: number;
+  totalRequested: number;
+  cashBuffer: number;
+  capBindingBuffer: number;
+  caps: EngineCaps;
+  diagnostics: EngineDiagnostics;
 }
 export interface EngineExecuteResult {
   preview: EnginePreview;

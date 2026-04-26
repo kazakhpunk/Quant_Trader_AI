@@ -56,11 +56,25 @@ export interface EnginePreviewRow {
   price: number;
 }
 
+export interface EngineDiagnostics {
+  totalCandidates: number;
+  afterDirection: number;
+  afterSentiment: number;
+  afterSkipHeld: number;
+  afterCap: number;
+}
+
 export interface EnginePreview {
   rows: EnginePreviewRow[];
   totalAllocated: number;
   totalRequested: number;
+  /** totalRequested − totalAllocated. Non-zero when the per-position cap or
+   *  qty rounding leaves capital undeployed. */
+  cashBuffer: number;
+  /** When > 0: the maxPositionPct cap binds, leaving this much idle. UI hint. */
+  capBindingBuffer: number;
   caps: EngineCaps;
+  diagnostics: EngineDiagnostics;
 }
 
 export function validateOrderRequest(req: Partial<OrderRequest>): string | null {
