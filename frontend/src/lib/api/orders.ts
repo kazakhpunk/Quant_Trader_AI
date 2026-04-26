@@ -32,6 +32,34 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   return body;
 }
 
+export async function closeAllPositions(
+  email: string,
+  isLiveTrading: boolean
+): Promise<{ ok: boolean; closed?: any; error?: string }> {
+  const res = await fetch(`${getApiUrl()}/api/v1/positions/close-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, isLiveTrading }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: body.error || `HTTP ${res.status}` };
+  return body;
+}
+
+export async function cancelAllOrders(
+  email: string,
+  isLiveTrading: boolean
+): Promise<{ ok: boolean; cancelled?: any; error?: string }> {
+  const res = await fetch(`${getApiUrl()}/api/v1/orders/cancel-all`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, isLiveTrading }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return { ok: false, error: body.error || `HTTP ${res.status}` };
+  return body;
+}
+
 export async function fetchLatestPrice(
   symbol: string,
   email: string,

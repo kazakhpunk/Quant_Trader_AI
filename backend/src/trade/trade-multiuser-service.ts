@@ -366,6 +366,42 @@ class TradeService {
     };
   }
 
+  public async closeAllPositions(
+    email: string,
+    isLive: boolean
+  ): Promise<{ ok: boolean; closed?: any; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      // Alpaca DELETE /v2/positions liquidates all positions AND cancels their
+      // related open orders in one call.
+      const { data } = await axios.delete(`${apiUrl}/positions`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true, closed: data };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
+  public async cancelAllOrders(
+    email: string,
+    isLive: boolean
+  ): Promise<{ ok: boolean; cancelled?: any; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      const { data } = await axios.delete(`${apiUrl}/orders`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true, cancelled: data };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
   public async monitorAndManagePositions(
     email: string,
     isLive: boolean

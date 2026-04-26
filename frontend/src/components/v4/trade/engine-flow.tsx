@@ -96,12 +96,15 @@ export function EngineFlow() {
           tpPct={state.caps.perPositionTakeProfitPct}
           onAdjust={() => setStage("configure")}
           onPlace={onPlace}
+          onRetry={onPreview}
           loading={loading}
         />
       )}
       {stage === "result" && result && (
         <ResultStep
           result={result}
+          email={email ?? ""}
+          isLiveTrading={state.isLiveTrading}
           onAnother={() => { setResult(null); setPreview(null); setStage("configure"); }}
         />
       )}

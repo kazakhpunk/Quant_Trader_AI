@@ -15,6 +15,8 @@ class TradeController {
     this.isMarketOpen = this.isMarketOpen.bind(this);
     this.fetchAndAnalyzeData = this.fetchAndAnalyzeData.bind(this);
     this.placeOrder = this.placeOrder.bind(this);
+    this.closeAllPositions = this.closeAllPositions.bind(this);
+    this.cancelAllOrders = this.cancelAllOrders.bind(this);
   }
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
@@ -123,6 +125,28 @@ class TradeController {
     if (err) { res.status(400).json({ error: err }); return; }
     const result = await this.tradeService.placeOrder(body as OrderRequest);
     res.status(result.ok ? 200 : 502).json(result);
+  }
+
+  public async closeAllPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading } = req.body;
+      if (!email) { res.status(400).json({ error: "email required" }); return; }
+      const result = await this.tradeService.closeAllPositions(email, !!isLiveTrading);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+
+  public async cancelAllOrders(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading } = req.body;
+      if (!email) { res.status(400).json({ error: "email required" }); return; }
+      const result = await this.tradeService.cancelAllOrders(email, !!isLiveTrading);
+      res.status(result.ok ? 200 : 502).json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   }
 }
 
