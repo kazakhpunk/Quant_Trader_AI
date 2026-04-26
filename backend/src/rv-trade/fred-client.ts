@@ -28,11 +28,15 @@ export class FredClient {
 
   constructor(apiKey: string, deps: FredClientDeps = {}) {
     this.apiKey = apiKey;
-    this.http = deps.http ?? (async (config) => {
+    if (deps.http) {
+      this.http = deps.http;
+    } else {
       const ax: AxiosInstance = axios.create({ timeout: 15_000 });
-      const res = await ax.get(FRED_URL, config);
-      return { data: res.data };
-    });
+      this.http = async (config) => {
+        const res = await ax.get(FRED_URL, config);
+        return { data: res.data };
+      };
+    }
     this.cacheGet = deps.cacheGet ?? (async () => null);
     this.cacheSet = deps.cacheSet ?? (async () => undefined);
   }
