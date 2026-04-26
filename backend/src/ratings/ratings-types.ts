@@ -15,10 +15,22 @@ export type VisibleDimension = (typeof VISIBLE_DIMENSIONS)[number];
 
 export type DimensionScores = Record<Dimension, number>; // each 0..100
 
+// Trade direction for which the score is computed. "long" rewards undervalued /
+// oversold / positive sentiment; "short" rewards overvalued / overbought /
+// negative sentiment. Same raw metrics, opposite-sign normalizers.
+export const DIRECTIONS = ["long", "short"] as const;
+export type Direction = (typeof DIRECTIONS)[number];
+
 export interface RatingRow {
   ticker: string;
-  composite: number; // 0..100
-  scores: DimensionScores;
+  // `composite` and `scores` mirror the long-direction variants for backward
+  // compatibility. New callers should read scoresLong / scoresShort directly.
+  composite: number; // 0..100 — same as compositeLong
+  scores: DimensionScores; // same as scoresLong
+  compositeLong: number;
+  compositeShort: number;
+  scoresLong: DimensionScores;
+  scoresShort: DimensionScores;
   metrics: Partial<{
     technical: { rsi?: number; sma20?: number; sma50?: number; ema20?: number; ema50?: number };
     fundamental: { pe?: number; pegRatio?: number; profitMargin?: number; dividendYield?: number; payoutRatio?: number };

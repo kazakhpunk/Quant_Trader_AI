@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { RatingRow, VISIBLE_DIMENSIONS, Dimension } from "@/lib/api/ratings";
+import { RatingRow, VISIBLE_DIMENSIONS, Dimension, Direction } from "@/lib/api/ratings";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +9,16 @@ const scoreClass = (n: number) =>
 
 type SortKey = "ticker" | "composite" | Dimension;
 
-export function CompositeTable({ rows }: { rows: RatingRow[] }) {
+export function CompositeTable({
+  rows,
+  direction,
+}: {
+  rows: RatingRow[];
+  direction?: Direction;
+}) {
+  const oppositeOf = (r: RatingRow) =>
+    direction === "short" ? r.compositeLong : r.compositeShort;
+  const oppositeLabel = direction === "short" ? "L" : "S";
   const open = useOrderDrawer((s) => s.open);
   const [sort, setSort] = useState<{ k: SortKey; dir: "asc" | "desc" }>({
     k: "composite", dir: "desc",
@@ -37,7 +46,7 @@ export function CompositeTable({ rows }: { rows: RatingRow[] }) {
   );
 
   return (
-    <div id="composite" className="overflow-hidden rounded-lg border border-border/60">
+    <div className="overflow-hidden rounded-lg border border-border/60">
       <table className="w-full table-auto">
         <thead className="bg-muted/30">
           <tr className="text-left">
@@ -56,7 +65,17 @@ export function CompositeTable({ rows }: { rows: RatingRow[] }) {
               onClick={() => open(r.ticker)}>
               <td className="px-4 py-3 font-medium">{r.ticker}</td>
               <td className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.composite))}>
-                {r.composite}
+                <div className="flex items-center justify-end gap-2">
+                  <span>{r.composite}</span>
+                  {direction && (
+                    <span
+                      className="rounded bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
+                      title={`Opposite-direction (${direction === "long" ? "short" : "long"}) composite`}
+                    >
+                      {oppositeLabel} {oppositeOf(r)}
+                    </span>
+                  )}
+                </div>
               </td>
               {VISIBLE_DIMENSIONS.map((d) => (
                 <td key={d} className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.scores[d]))}>

@@ -1,4 +1,12 @@
-import { computeComposite, normalizeRsi, normalizePe, normalizeSentimentRaw } from "../ratings-service";
+import {
+  computeComposite,
+  normalizeRsi, normalizePe, normalizeSentimentRaw,
+  normalizeRsiLong, normalizeRsiShort,
+  normalizePeLong, normalizePeShort,
+  normalizeSentimentLong, normalizeSentimentShort,
+  normalizePriceLong, normalizePriceShort,
+  normalizeVolLong, normalizeVolShort,
+} from "../ratings-service";
 
 describe("computeComposite", () => {
   it("equal-weights five 0-100 scores", () => {
@@ -61,5 +69,51 @@ describe("normalizers", () => {
     expect(normalizeSentimentRaw(10)).toBe(100);
     expect(normalizeSentimentRaw(-20)).toBe(0); // clamped
     expect(normalizeSentimentRaw(20)).toBe(100); // clamped
+  });
+});
+
+describe("directional normalizers", () => {
+  it("RSI: low favors longs, high favors shorts", () => {
+    expect(normalizeRsiLong(20)).toBe(80);   // oversold = good long
+    expect(normalizeRsiLong(80)).toBe(20);   // overbought = bad long
+    expect(normalizeRsiShort(80)).toBe(80);  // overbought = good short
+    expect(normalizeRsiShort(20)).toBe(20);  // oversold = bad short
+  });
+
+  it("P/E: cheap favors longs, expensive (or losses) favor shorts", () => {
+    expect(normalizePeLong(10)).toBe(100);    // cheap = best long
+    expect(normalizePeLong(15)).toBe(100);    // fair = best long
+    expect(normalizePeLong(40)).toBeLessThan(60);
+    expect(normalizePeLong(-5)).toBe(0);      // losses = worst long
+
+    expect(normalizePeShort(-5)).toBe(100);   // losses = best short
+    expect(normalizePeShort(10)).toBe(0);     // cheap = bad short
+    expect(normalizePeShort(40)).toBeGreaterThan(40);
+  });
+
+  it("sentiment: positive favors longs, negative favors shorts", () => {
+    expect(normalizeSentimentLong(5)).toBe(75);
+    expect(normalizeSentimentLong(-5)).toBe(25);
+    expect(normalizeSentimentShort(5)).toBe(25);
+    expect(normalizeSentimentShort(-5)).toBe(75);
+  });
+
+  it("price: uptrend favors longs, downtrend favors shorts", () => {
+    expect(normalizePriceLong(10)).toBe(75);
+    expect(normalizePriceLong(-10)).toBe(25);
+    expect(normalizePriceShort(10)).toBe(25);
+    expect(normalizePriceShort(-10)).toBe(75);
+  });
+
+  it("volatility: low vol favored by both; shorts penalize high vol harder", () => {
+    expect(normalizeVolLong(20)).toBe(75);
+    expect(normalizeVolShort(20)).toBe(70);  // -1.5 vs -1.25 slope
+    expect(normalizeVolLong(80)).toBe(0);
+    expect(normalizeVolShort(80)).toBe(0);
+  });
+
+  it("non-finite inputs default to 50, not NaN", () => {
+    expect(normalizeRsiLong(NaN)).toBe(50);
+    expect(normalizeSentimentShort(Infinity)).toBe(50);
   });
 });
