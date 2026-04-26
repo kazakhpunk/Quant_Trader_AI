@@ -15,29 +15,23 @@ const dash = (v: any, fmt?: (x: any) => string) =>
 export const DIMENSION_COLUMNS: Record<Dimension, Col<any>[]> = {
   technical: [
     { key: "rsi",   label: "RSI",   get: (r) => r.metrics.technical?.rsi,   format: (v) => v.toFixed(1) },
-    { key: "macd",  label: "MACD",  get: (r) => r.metrics.technical?.macd,  format: (v) => v.toFixed(2) },
-    { key: "ma50",  label: "MA50",  get: (r) => r.metrics.technical?.ma50,  format: (v) => v.toFixed(2) },
-    { key: "ma200", label: "MA200", get: (r) => r.metrics.technical?.ma200, format: (v) => v.toFixed(2) },
+    { key: "sma20", label: "SMA20", get: (r) => r.metrics.technical?.sma20, format: (v) => v.toFixed(2) },
+    { key: "sma50", label: "SMA50", get: (r) => r.metrics.technical?.sma50, format: (v) => v.toFixed(2) },
+    { key: "ema20", label: "EMA20", get: (r) => r.metrics.technical?.ema20, format: (v) => v.toFixed(2) },
+    { key: "ema50", label: "EMA50", get: (r) => r.metrics.technical?.ema50, format: (v) => v.toFixed(2) },
   ],
   fundamental: [
-    { key: "pe",           label: "P/E",        get: (r) => r.metrics.fundamental?.pe,           format: (v) => v.toFixed(1) },
-    { key: "epsGrowth",    label: "EPS growth", get: (r) => r.metrics.fundamental?.epsGrowth,    format: (v) => `${(v * 100).toFixed(1)}%` },
-    { key: "profitMargin", label: "Margin",     get: (r) => r.metrics.fundamental?.profitMargin, format: (v) => `${(v * 100).toFixed(1)}%` },
+    { key: "pe",            label: "P/E",       get: (r) => r.metrics.fundamental?.pe,            format: (v) => v.toFixed(1) },
+    { key: "pegRatio",      label: "PEG",       get: (r) => r.metrics.fundamental?.pegRatio,      format: (v) => v.toFixed(2) },
+    { key: "profitMargin",  label: "Margin",    get: (r) => r.metrics.fundamental?.profitMargin,  format: (v) => `${(v * 100).toFixed(1)}%` },
+    { key: "dividendYield", label: "Div yield", get: (r) => r.metrics.fundamental?.dividendYield, format: (v) => `${(v * 100).toFixed(2)}%` },
+    { key: "payoutRatio",   label: "Payout",    get: (r) => r.metrics.fundamental?.payoutRatio,   format: (v) => `${(v * 100).toFixed(0)}%` },
   ],
   sentiment: [
-    { key: "newsCount", label: "News count", get: (r) => r.metrics.sentiment?.newsCount },
-    { key: "avgScore",  label: "Avg score",  get: (r) => r.metrics.sentiment?.avgScore, format: (v) => v.toFixed(2) },
+    { key: "score", label: "Sentiment", get: (r) => r.metrics.sentiment?.score, format: (v) => v.toFixed(2) },
   ],
-  price: [
-    { key: "d1Pct",  label: "1d %",  get: (r) => r.metrics.price?.d1Pct,  format: (v) => `${v.toFixed(2)}%` },
-    { key: "d5Pct",  label: "5d %",  get: (r) => r.metrics.price?.d5Pct,  format: (v) => `${v.toFixed(2)}%` },
-    { key: "d30Pct", label: "30d %", get: (r) => r.metrics.price?.d30Pct, format: (v) => `${v.toFixed(2)}%` },
-  ],
-  volatility: [
-    { key: "sigma30d", label: "30d σ", get: (r) => r.metrics.volatility?.sigma30d, format: (v) => v.toFixed(3) },
-    { key: "atr",      label: "ATR",   get: (r) => r.metrics.volatility?.atr,      format: (v) => v.toFixed(2) },
-    { key: "beta",     label: "Beta",  get: (r) => r.metrics.volatility?.beta,     format: (v) => v.toFixed(2) },
-  ],
+  price: [],
+  volatility: [],
 };
 
 export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows: RatingRow[] }) {

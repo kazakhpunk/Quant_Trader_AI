@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
-import { getRatings, RatingRow, DIMENSIONS } from "@/lib/api/ratings";
+import { getRatings, RatingRow, VISIBLE_DIMENSIONS } from "@/lib/api/ratings";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AccountData {
@@ -448,7 +448,7 @@ function RatingCell({ row }: { row: RatingRow | undefined }) {
         </TooltipTrigger>
         <TooltipContent>
           <ul className="text-xs">
-            {DIMENSIONS.map((d) => (
+            {VISIBLE_DIMENSIONS.map((d) => (
               <li key={d} className="flex justify-between gap-4">
                 <span className="capitalize text-muted-foreground">{d}</span>
                 <span className="font-mono tabular-nums">{Math.round(row.scores[d])}</span>

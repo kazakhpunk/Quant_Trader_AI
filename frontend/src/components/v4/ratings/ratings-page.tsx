@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { CircularProgress } from "@mui/material";
-import { getRatings, RatingRow, DIMENSIONS } from "@/lib/api/ratings";
+import { getRatings, RatingRow, VISIBLE_DIMENSIONS } from "@/lib/api/ratings";
 import { CompositeTable } from "./composite-table";
 import { DimensionTable } from "./dimension-table";
 import { StickySubnav } from "./sticky-subnav";
@@ -51,7 +51,7 @@ export function RatingsPage() {
           <h2 className="text-lg font-semibold tracking-tight">Composite</h2>
           <CompositeTable rows={rows} />
         </section>
-        {DIMENSIONS.map((d) => (
+        {VISIBLE_DIMENSIONS.map((d) => (
           <DimensionTable key={d} dimension={d} rows={rows} />
         ))}
       </div>

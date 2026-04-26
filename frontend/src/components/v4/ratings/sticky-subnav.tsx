@@ -1,7 +1,7 @@
 "use client";
-import { DIMENSIONS } from "@/lib/api/ratings";
+import { VISIBLE_DIMENSIONS } from "@/lib/api/ratings";
 
-const ITEMS = ["composite", ...DIMENSIONS] as const;
+const ITEMS = ["composite", ...VISIBLE_DIMENSIONS] as const;
 
 export function StickySubnav() {
   return (

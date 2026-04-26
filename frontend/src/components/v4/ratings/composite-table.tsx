@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { RatingRow, DIMENSIONS, Dimension } from "@/lib/api/ratings";
+import { RatingRow, VISIBLE_DIMENSIONS, Dimension } from "@/lib/api/ratings";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
 
@@ -43,7 +43,7 @@ export function CompositeTable({ rows }: { rows: RatingRow[] }) {
           <tr className="text-left">
             <Th k="ticker" label="Ticker" />
             <Th k="composite" label="Composite" right />
-            {DIMENSIONS.map((d) => (
+            {VISIBLE_DIMENSIONS.map((d) => (
               <Th key={d} k={d} label={d.slice(0, 4)} right />
             ))}
             <th className="w-10" />
@@ -58,7 +58,7 @@ export function CompositeTable({ rows }: { rows: RatingRow[] }) {
               <td className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.composite))}>
                 {r.composite}
               </td>
-              {DIMENSIONS.map((d) => (
+              {VISIBLE_DIMENSIONS.map((d) => (
                 <td key={d} className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.scores[d]))}>
                   {Math.round(r.scores[d])}
                 </td>

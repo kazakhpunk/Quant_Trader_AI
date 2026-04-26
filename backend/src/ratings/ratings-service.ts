@@ -4,6 +4,7 @@ import {
   Dimension,
   DimensionScores,
   RatingRow,
+  VISIBLE_DIMENSIONS,
 } from "./ratings-types";
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(100, n));
@@ -24,9 +25,11 @@ export function normalizePe(pe: number): number {
   return clamp01(100 - Math.abs(pe - 15) * 2);
 }
 
-// Sentiment compound score in [-1, 1].
+// Sentiment from the `sentiment` npm package: per-article integer scores
+// averaged into a single number (typical range ~ -10..+10).
+// Map 0 → 50, +10 → 100, -10 → 0.
 export function normalizeSentimentRaw(s: number): number {
-  return clamp01(((s + 1) / 2) * 100);
+  return clamp01(50 + s * 5);
 }
 
 const NEUTRAL = 50;
@@ -35,11 +38,12 @@ export class RatingsService {
   constructor(private db: Db) {}
 
   async getAll(): Promise<RatingRow[]> {
-    // NOTE: Discovery via Step 1 confirmed the actual collection names differ from the plan defaults.
-    // Actual collections found: "technicalData" (fields: ticker, rsi14, sma50, sma20, ema50, ema20)
-    //                           "fundamentalData" (fields: ticker, peRatio, profitMargin, pegRatio, ...)
-    // Collections NOT present: sentimentAnalysis, priceAnalysis, volatilityAnalysis —
-    //   those dimensions default to NEUTRAL (50).
+    // Collections in use:
+    //   technicalData    (ticker, rsi14, sma20, sma50, ema20, ema50)
+    //   fundamentalData  (ticker, peRatio, pegRatio, profitMargin, dividendYield, payoutRatio, revenue, freeCashFlow)
+    //   longCandidates / shortCandidates  (ticker, sentiment, ...)
+    // priceAnalysis / volatilityAnalysis don't exist — those dimensions stay at NEUTRAL
+    // and are hidden in the UI via VISIBLE_DIMENSIONS.
     const tickerDocs = await this.db
       .collection("technicalData")
       .find({})
@@ -64,18 +68,19 @@ export class RatingsService {
         asOf: new Date().toISOString(),
       };
 
-      // technicalData stores rsi14 (not rsi), and sma50/sma20 (not ma50/ma200)
       if (typeof doc.rsi14 === "number") {
         byTicker[t].scores.technical = normalizeRsi(doc.rsi14);
-        byTicker[t].metrics.technical = {
-          rsi: doc.rsi14,
-          ma50: doc.sma50,
-        };
       }
+      byTicker[t].metrics.technical = {
+        rsi: doc.rsi14,
+        sma20: doc.sma20,
+        sma50: doc.sma50,
+        ema20: doc.ema20,
+        ema50: doc.ema50,
+      };
     }
 
     // ----- fundamental -----
-    // fundamentalData stores peRatio (not pe), profitMargin
     const fundDocs = await this.db
       .collection("fundamentalData")
       .find({})
@@ -85,25 +90,40 @@ export class RatingsService {
       if (!t || !byTicker[t]) continue;
       if (typeof doc.peRatio === "number") {
         byTicker[t].scores.fundamental = normalizePe(doc.peRatio);
-        byTicker[t].metrics.fundamental = {
-          pe: doc.peRatio,
-          profitMargin: doc.profitMargin,
-        };
       }
+      byTicker[t].metrics.fundamental = {
+        pe: doc.peRatio,
+        pegRatio: doc.pegRatio,
+        profitMargin: doc.profitMargin,
+        dividendYield: doc.dividendYield,
+        payoutRatio: doc.payoutRatio,
+      };
     }
 
     // ----- sentiment -----
-    // Collection "sentimentAnalysis" not present in DB — dimension stays at NEUTRAL.
+    // Sentiment scores live on the long/short candidate documents (one per ticker).
+    const longCands = await this.db.collection("longCandidates").find({}).toArray();
+    const shortCands = await this.db.collection("shortCandidates").find({}).toArray();
+    for (const doc of [...longCands, ...shortCands]) {
+      const t = doc.ticker as string;
+      if (!t || !byTicker[t]) continue;
+      if (typeof doc.sentiment === "number") {
+        byTicker[t].scores.sentiment = normalizeSentimentRaw(doc.sentiment);
+        byTicker[t].metrics.sentiment = { score: doc.sentiment };
+      }
+    }
 
-    // ----- price -----
-    // Collection "priceAnalysis" not present in DB — dimension stays at NEUTRAL.
-
-    // ----- volatility -----
-    // Collection "volatilityAnalysis" not present in DB — dimension stays at NEUTRAL.
+    // ----- price + volatility -----
+    // No source data; left at NEUTRAL and hidden in the UI.
 
     const out = Object.values(byTicker).map((row) => ({
       ...row,
-      composite: computeComposite(row.scores),
+      // Composite averages only the dimensions we actually compute, so
+      // missing pipelines don't drag every score toward 50.
+      composite: Math.round(
+        VISIBLE_DIMENSIONS.reduce((s, d) => s + clamp01(row.scores[d]), 0) /
+          VISIBLE_DIMENSIONS.length
+      ),
     }));
     return out.sort((a, b) => b.composite - a.composite);
   }

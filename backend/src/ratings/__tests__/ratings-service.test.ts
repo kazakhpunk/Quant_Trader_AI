@@ -52,9 +52,14 @@ describe("normalizers", () => {
     expect(normalizePe(-5)).toBe(0);
   });
 
-  it("sentiment raw [-1, 1] → [0, 100]", () => {
-    expect(normalizeSentimentRaw(-1)).toBe(0);
+  // The `sentiment` npm package returns integer per-article scores, averaged.
+  // Empirically these cluster in roughly [-10, 10]; map that range to [0, 100]
+  // with 0 (neutral) at 50.
+  it("sentiment raw ~[-10, 10] → [0, 100], 0 → 50", () => {
+    expect(normalizeSentimentRaw(-10)).toBe(0);
     expect(normalizeSentimentRaw(0)).toBe(50);
-    expect(normalizeSentimentRaw(1)).toBe(100);
+    expect(normalizeSentimentRaw(10)).toBe(100);
+    expect(normalizeSentimentRaw(-20)).toBe(0); // clamped
+    expect(normalizeSentimentRaw(20)).toBe(100); // clamped
   });
 });
