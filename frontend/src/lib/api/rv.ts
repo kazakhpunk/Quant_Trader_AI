@@ -77,7 +77,10 @@ export interface BacktestRunDto {
 }
 
 async function http<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { ...init, credentials: 'include' });
+  // Don't send credentials — RV endpoints are public reads, and
+  // combining `credentials: 'include'` with the backend's wildcard
+  // `Access-Control-Allow-Origin: *` is rejected by the browser.
+  const res = await fetch(url, init);
   if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
   return res.json();
 }
