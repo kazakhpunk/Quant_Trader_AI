@@ -1,0 +1,75 @@
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+
+export interface CountryDto {
+  iso: string; name: string; region: string; rating: number;
+  oilExporter: boolean; commodityExporter: boolean; igHy: 'IG' | 'HY';
+  debtToGdp: number; fredOasSeriesId: string;
+}
+
+export interface PairDto {
+  a: CountryDto; b: CountryDto; bucket: string;
+  cointPValue?: number; correlation?: number; halfLife?: number;
+  beta?: number; alpha?: number;
+  status: 'candidate' | 'active' | 'rejected';
+  rejectReason?: string;
+}
+
+export interface SignalDto {
+  pairKey: string; a: string; b: string; bucket: string;
+  beta: number; alpha: number; residual: number;
+  z: number; delta5d: number; halfLife: number;
+  cointPValue: number; correlation: number;
+  status: 'tradeable' | 'regime-broken'; asOf: string;
+}
+
+export interface TradingRulesDto {
+  entryZ: number; exitZ: number; stopZ: number;
+  maxHoldingDays: number; costBpsRoundTrip: number;
+  sizing: 'equalWeight' | 'inverseVol';
+}
+
+export interface BacktestConfigDto {
+  rules: TradingRulesDto;
+  startDate: string; endDate: string;
+  notional: number; dv01YearsProxy: number;
+}
+
+export interface BacktestMetricsDto {
+  totalReturn: number; annReturn: number; annVol: number;
+  sharpe: number; sortino: number; maxDrawdown: number;
+  hitRate: number; avgHoldingDays: number; turnover: number;
+  deflatedSharpe: number; numTrades: number;
+}
+
+export interface TradeLogDto {
+  pairKey: string; entryDate: string; exitDate: string;
+  entryZ: number; exitZ: number; pnl: number;
+  holdingDays: number; exitReason: string;
+}
+
+export interface BacktestRunDto {
+  _id?: string; userEmail: string; ts: string;
+  config: BacktestConfigDto;
+  metrics: BacktestMetricsDto;
+  equityCurve: { date: string; nav: number }[];
+  trades: TradeLogDto[];
+}
+
+async function http<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, { ...init, credentials: 'include' });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+export const rvApi = {
+  getUniverse: () => http<{ universe: CountryDto[] }>(`${API_BASE}/api/v4/rv/universe`),
+  getPairs:    () => http<{ pairs: PairDto[]; config: any }>(`${API_BASE}/api/v4/rv/pairs`),
+  getSignals:  () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals`),
+  refreshSignals: () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals/refresh`, { method: 'POST' }),
+  runBacktest: (config: BacktestConfigDto) =>
+    http<{ runId: string; run: BacktestRunDto }>(`${API_BASE}/api/v4/rv/backtests`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(config),
+    }),
+  listBacktests: () => http<{ runs: BacktestRunDto[] }>(`${API_BASE}/api/v4/rv/backtests`),
+  getBacktest: (id: string) => http<{ run: BacktestRunDto }>(`${API_BASE}/api/v4/rv/backtests/${id}`),
+};
