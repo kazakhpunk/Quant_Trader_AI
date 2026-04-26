@@ -19,6 +19,10 @@ const createTradeRouter = async (db: Db) => {
   router.post("/trade/order", tradeController.placeOrder);
   router.post("/positions/close-all", tradeController.closeAllPositions);
   router.post("/orders/cancel-all", tradeController.cancelAllOrders);
+  router.post("/positions/list", tradeController.listPositions);
+  router.post("/orders/open", tradeController.listOpenOrders);
+  router.post("/positions/close", tradeController.closePosition);
+  router.post("/orders/cancel", tradeController.cancelOrder);
 
   return router;
 };

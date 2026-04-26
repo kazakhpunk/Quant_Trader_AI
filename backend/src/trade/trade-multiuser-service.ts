@@ -366,6 +366,76 @@ class TradeService {
     };
   }
 
+  public async listPositions(
+    email: string,
+    isLive: boolean
+  ): Promise<{ ok: boolean; positions?: any[]; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      const { data } = await axios.get(`${apiUrl}/positions`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true, positions: data ?? [] };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
+  public async listOpenOrders(
+    email: string,
+    isLive: boolean
+  ): Promise<{ ok: boolean; orders?: any[]; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      const { data } = await axios.get(`${apiUrl}/orders?status=open`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true, orders: data ?? [] };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
+  public async closePosition(
+    email: string,
+    isLive: boolean,
+    symbol: string
+  ): Promise<{ ok: boolean; closed?: any; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      const { data } = await axios.delete(`${apiUrl}/positions/${encodeURIComponent(symbol)}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true, closed: data };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
+  public async cancelOrder(
+    email: string,
+    isLive: boolean,
+    orderId: string
+  ): Promise<{ ok: boolean; error?: string }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) return { ok: false, error: "no brokerage connected" };
+    const apiUrl = this.getApiBaseUrl(isLive);
+    try {
+      await axios.delete(`${apiUrl}/orders/${encodeURIComponent(orderId)}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return { ok: true };
+    } catch (err: any) {
+      return { ok: false, error: err?.response?.data?.message || err.message };
+    }
+  }
+
   public async closeAllPositions(
     email: string,
     isLive: boolean

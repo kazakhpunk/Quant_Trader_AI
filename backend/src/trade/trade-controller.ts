@@ -17,6 +17,10 @@ class TradeController {
     this.placeOrder = this.placeOrder.bind(this);
     this.closeAllPositions = this.closeAllPositions.bind(this);
     this.cancelAllOrders = this.cancelAllOrders.bind(this);
+    this.listPositions = this.listPositions.bind(this);
+    this.listOpenOrders = this.listOpenOrders.bind(this);
+    this.closePosition = this.closePosition.bind(this);
+    this.cancelOrder = this.cancelOrder.bind(this);
   }
 
   public async executeTrades(req: Request, res: Response): Promise<void> {
@@ -144,6 +148,56 @@ class TradeController {
       if (!email) { res.status(400).json({ error: "email required" }); return; }
       const result = await this.tradeService.cancelAllOrders(email, !!isLiveTrading);
       res.status(result.ok ? 200 : 502).json(result);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+
+  public async listPositions(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading } = req.body;
+      if (!email) { res.status(400).json({ error: "email required" }); return; }
+      const r = await this.tradeService.listPositions(email, !!isLiveTrading);
+      res.status(r.ok ? 200 : 502).json(r);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+
+  public async listOpenOrders(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading } = req.body;
+      if (!email) { res.status(400).json({ error: "email required" }); return; }
+      const r = await this.tradeService.listOpenOrders(email, !!isLiveTrading);
+      res.status(r.ok ? 200 : 502).json(r);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+
+  public async closePosition(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading, symbol } = req.body;
+      if (!email || !symbol) {
+        res.status(400).json({ error: "email and symbol required" });
+        return;
+      }
+      const r = await this.tradeService.closePosition(email, !!isLiveTrading, symbol);
+      res.status(r.ok ? 200 : 502).json(r);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  }
+
+  public async cancelOrder(req: Request, res: Response): Promise<void> {
+    try {
+      const { email, isLiveTrading, orderId } = req.body;
+      if (!email || !orderId) {
+        res.status(400).json({ error: "email and orderId required" });
+        return;
+      }
+      const r = await this.tradeService.cancelOrder(email, !!isLiveTrading, orderId);
+      res.status(r.ok ? 200 : 502).json(r);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
