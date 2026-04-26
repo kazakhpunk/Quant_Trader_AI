@@ -71,7 +71,7 @@ export function UniverseMap({ countries }: { countries: CountryDto[] }) {
           <YAxis dataKey="y" type="number" name="PC2" tickFormatter={() => ""} />
           <Tooltip
             cursor={{ strokeDasharray: "3 3" }}
-            formatter={(v: unknown) => typeof v === "number" ? v.toFixed(2) : v}
+            formatter={(v: unknown) => (typeof v === "number" ? v.toFixed(2) : String(v))}
             labelFormatter={() => ""}
             content={({ payload }) => {
               if (!payload || payload.length === 0) return null;
