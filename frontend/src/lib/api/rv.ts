@@ -3,6 +3,15 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
 export type AssetSource = 'fred' | 'yahoo';
 export type AssetCategory = 'overall' | 'region' | 'rating' | 'grade' | 'sector' | 'etf';
 
+export interface SeriesStatsDto {
+  mean: number;
+  vol: number;
+  ret30d: number;       // percent
+  autocorr1: number;
+  last: number;
+  n: number;
+}
+
 export interface AssetDto {
   iso: string;            // unique short id
   name: string;
@@ -12,6 +21,8 @@ export interface AssetDto {
   region?: string;
   igHy?: 'IG' | 'HY';
   description?: string;
+  /** Populated by /universe when source-series fetch succeeds. */
+  stats?: SeriesStatsDto | null;
 }
 /** @deprecated use AssetDto */
 export type CountryDto = AssetDto;

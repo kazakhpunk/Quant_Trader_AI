@@ -9,8 +9,11 @@ export interface PipelineConfig {
   lookback: number;           // default 250 trading days
 }
 
+// Loosened from academic 0.05 / 0.7 to 0.10 / 0.5 — defensible for a small,
+// heterogeneous universe (ETFs + spread buckets) where many pairs genuinely
+// co-move but don't pass the strict cointegration / correlation tests.
 export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
-  cointPMax: 0.05, corrMin: 0.7, halfLifeMax: 40, lookback: 250,
+  cointPMax: 0.10, corrMin: 0.5, halfLifeMax: 40, lookback: 250,
 };
 
 export function runPairPipeline(
