@@ -21,8 +21,8 @@ export function runPairPipeline(
   const candidates = pairsWithinBuckets(universe);
   const out: PairCandidate[] = [];
   for (const c of candidates) {
-    const yArr = series.get(c.a.fredOasSeriesId) ?? series.get(c.a.iso);
-    const xArr = series.get(c.b.fredOasSeriesId) ?? series.get(c.b.iso);
+    const yArr = series.get(c.a.iso);
+    const xArr = series.get(c.b.iso);
     if (!yArr || !xArr) continue;
     const len = Math.min(yArr.length, xArr.length, config.lookback);
     if (len < 60) continue;

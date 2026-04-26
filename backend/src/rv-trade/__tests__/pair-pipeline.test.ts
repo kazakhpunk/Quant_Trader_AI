@@ -29,7 +29,7 @@ describe('pair pipeline', () => {
     const rand = seededRand(7);
     const x = genWalk(400, 1);
     const y = x.map(v => 1.1 * v + 5 + (rand() - 0.5) * 0.3);   // cointegrated with x
-    const series = new Map<string, number[]>([['A', y], ['B', x], ['C', genWalk(400, 99)]]);
+    const series = new Map<string, number[]>([['AAA', y], ['BBB', x], ['CCC', genWalk(400, 99)]]);
     const config: PipelineConfig = {
       cointPMax: 0.10, corrMin: 0.5, halfLifeMax: 60,
       lookback: 250,
@@ -42,7 +42,7 @@ describe('pair pipeline', () => {
 
   it('rejects pair with no co-movement', () => {
     const series = new Map<string, number[]>([
-      ['A', genWalk(400, 1)], ['B', genWalk(400, 50)], ['C', genWalk(400, 99)],
+      ['AAA', genWalk(400, 1)], ['BBB', genWalk(400, 50)], ['CCC', genWalk(400, 99)],
     ]);
     const config: PipelineConfig = { cointPMax: 0.05, corrMin: 0.7, halfLifeMax: 40, lookback: 250 };
     const pairs = runPairPipeline([COUNTRY_A, COUNTRY_B, COUNTRY_C], series, config);
@@ -51,7 +51,7 @@ describe('pair pipeline', () => {
   });
 
   it('drops countries without time series silently', () => {
-    const series = new Map<string, number[]>([['A', genWalk(400, 1)]]);
+    const series = new Map<string, number[]>([['AAA', genWalk(400, 1)]]);
     const config: PipelineConfig = { cointPMax: 0.05, corrMin: 0.7, halfLifeMax: 40, lookback: 250 };
     const pairs = runPairPipeline([COUNTRY_A, COUNTRY_B, COUNTRY_C], series, config);
     expect(pairs).toHaveLength(0);
