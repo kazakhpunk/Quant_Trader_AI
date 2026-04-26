@@ -44,7 +44,7 @@ export interface EnginePreview {
 }
 export interface EngineExecuteResult {
   preview: EnginePreview;
-  results: { ticker: string; ok: boolean; orderId?: string; status?: string; error?: string }[];
+  results: { ticker: string; ok: boolean; orderId?: string; status?: string; error?: string; note?: string }[];
 }
 
 async function call(state: EngineFormState, email: string, dryRun: boolean) {

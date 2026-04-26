@@ -17,6 +17,9 @@ export interface OrderResult {
   orderId?: string;
   status?: string;
   error?: string;
+  /** Non-fatal note: e.g. bracket dropped because Alpaca rejects brackets on
+   *  fractional-share orders. Order still placed, just without stop/take-profit. */
+  note?: string;
 }
 
 export interface EngineCaps {

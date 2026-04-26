@@ -13,13 +13,16 @@ export function ResultStep({ result, onAnother }: {
       <h1 className="mt-2 text-3xl font-semibold tracking-tight">Orders submitted</h1>
       <ul className="mt-8 divide-y divide-border/60 rounded-lg border border-border/60">
         {result.results.map((r, i) => (
-          <li key={i} className="flex items-baseline justify-between px-4 py-3">
-            <div>
+          <li key={i} className="flex items-start justify-between gap-4 px-4 py-3">
+            <div className="min-w-0">
               <div className="font-medium">{r.ticker}</div>
               <div className="font-mono text-xs text-muted-foreground">{r.orderId ?? "—"}</div>
+              {r.note && (
+                <div className="mt-1 text-xs text-amber-700 dark:text-amber-400">{r.note}</div>
+              )}
             </div>
             <span className={cn(
-              "rounded-full px-2 py-0.5 text-xs",
+              "shrink-0 rounded-full px-2 py-0.5 text-xs",
               r.ok ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
                   : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
             )}>

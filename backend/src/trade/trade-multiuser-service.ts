@@ -190,7 +190,16 @@ class TradeService {
     }
     if (!qty || qty <= 0) return { ok: false, error: "qty resolved to 0" };
 
-    const wantsBracket = req.stopLossPct != null || req.takeProfitPct != null;
+    // Alpaca rejects bracket orders on fractional shares ("fractional orders
+    // must be simple orders"). Skip the bracket in that case and surface a
+    // non-fatal note so the UI can warn the user that stop/take-profit isn't
+    // attached.
+    const isFractional = qty % 1 !== 0;
+    const wantsBracket =
+      (req.stopLossPct != null || req.takeProfitPct != null) && !isFractional;
+    const droppedBracket =
+      isFractional && (req.stopLossPct != null || req.takeProfitPct != null);
+
     const basePayload: any = {
       symbol: req.symbol,
       qty,
@@ -226,7 +235,11 @@ class TradeService {
           "Content-Type": "application/json",
         },
       });
-      return { ok: true, orderId: data.id, status: data.status };
+      const result: OrderResult = { ok: true, orderId: data.id, status: data.status };
+      if (droppedBracket) {
+        result.note = "Bracket (stop/take-profit) skipped — fractional shares can't carry brackets on Alpaca.";
+      }
+      return result;
     } catch (err: any) {
       const msg = err?.response?.data?.message || err.message;
       return { ok: false, error: msg };
