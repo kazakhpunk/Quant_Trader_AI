@@ -11,7 +11,7 @@ export function SignalTable({ signals }: { signals: SignalDto[] }) {
       <TableHeader>
         <TableRow>
           <TableHead>Pair</TableHead>
-          <TableHead>Bucket</TableHead>
+          <TableHead>Category</TableHead>
           <TableHead className="text-right">Residual</TableHead>
           <TableHead className="text-right">z</TableHead>
           <TableHead className="text-right">Δ5d</TableHead>
@@ -24,7 +24,7 @@ export function SignalTable({ signals }: { signals: SignalDto[] }) {
         {sorted.map(s => (
           <TableRow key={s.pairKey}>
             <TableCell className="font-mono">{s.a}-{s.b}</TableCell>
-            <TableCell>{s.bucket}</TableCell>
+            <TableCell>{s.category}</TableCell>
             <TableCell className="text-right">{s.residual.toFixed(2)}</TableCell>
             <TableCell className={`text-right font-semibold ${Math.abs(s.z) >= 2 ? "text-foreground" : "text-muted-foreground"}`}>
               {s.z.toFixed(2)}

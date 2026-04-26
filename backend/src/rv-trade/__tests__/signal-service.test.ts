@@ -1,5 +1,5 @@
 import { buildSignal } from '../signal-service';
-import { Country, PairCandidate } from '../rv-types';
+import { Asset, PairCandidate } from '../rv-types';
 
 function seededRand(seed: number): () => number {
   let s = seed >>> 0;
@@ -9,11 +9,11 @@ function seededRand(seed: number): () => number {
   };
 }
 
-const A: Country = { iso: 'AAA', name: 'A', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'A' };
-const B: Country = { iso: 'BBB', name: 'B', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'B' };
+const A: Asset = { iso: 'AAA', name: 'A', category: 'rating', source: 'fred', seriesId: 'A' };
+const B: Asset = { iso: 'BBB', name: 'B', category: 'rating', source: 'fred', seriesId: 'B' };
 
 describe('buildSignal', () => {
-  const pair: PairCandidate = { a: A, b: B, bucket: 'latamHY', status: 'active', cointPValue: 0.02, correlation: 0.85, halfLife: 25, beta: 1.1, alpha: 5 };
+  const pair: PairCandidate = { a: A, b: B, category: 'rating', status: 'active', cointPValue: 0.02, correlation: 0.85, halfLife: 25, beta: 1.1, alpha: 5 };
 
   it('produces tradeable signal for stationary residual at 0', () => {
     const rand = seededRand(31);

@@ -23,7 +23,7 @@ describe('RvStore', () => {
   it('round-trips signal snapshots', async () => {
     const store = new RvStore(db);
     const sig: SignalRow = {
-      pairKey: 'BRA-MEX', a: 'BRA', b: 'MEX', bucket: 'latamHY',
+      pairKey: 'BRA-MEX', a: 'BRA', b: 'MEX', category: 'rating',
       beta: 1.1, alpha: 5, residual: 12, z: 2.1, delta5d: 0.8, halfLife: 25,
       cointPValue: 0.02, correlation: 0.81, status: 'tradeable', asOf: '2026-04-25',
     };

@@ -1,32 +1,38 @@
-export type Region = 'LatAm' | 'EMEA' | 'Asia' | 'MENA';
+export type Region = 'LatAm' | 'EMEA' | 'Asia' | 'MENA' | 'Global';
 export type IgHy = 'IG' | 'HY';
 
-export type Bucket =
-  | 'oilExporters'
-  | 'commodityExporters'
-  | 'latamIG'
-  | 'latamHY'
-  | 'cee'
-  | 'gcc'
-  | 'asiaIG'
-  | 'frontier';
+export type AssetSource = 'fred' | 'yahoo';
+export type AssetCategory =
+  | 'overall'
+  | 'region'
+  | 'rating'
+  | 'grade'
+  | 'sector'
+  | 'etf';
 
-export interface Country {
-  iso: string;
-  name: string;
-  region: Region;
-  rating: number;            // S&P scale 1 (AAA) ... 22 (D)
-  oilExporter: boolean;
-  commodityExporter: boolean;
-  igHy: IgHy;
-  debtToGdp: number;         // percent
-  fredOasSeriesId: string;
+/** A spread or yield series we run cointegration on. Replaces the original
+ *  Country type; the field name `iso` is kept for back-compat with existing
+ *  pipeline/signal code, but it's now a generic short id (e.g. 'fred-asia',
+ *  'yahoo-emb') rather than an ISO country code. */
+export interface Asset {
+  iso: string;             // unique short id used as key
+  name: string;            // display label
+  category: AssetCategory; // pair-grouping key
+  source: AssetSource;
+  seriesId: string;        // FRED series ID or Yahoo ticker
+  region?: Region;         // optional metadata (regions, IG/HY, rating bucket)
+  igHy?: IgHy;
+  description?: string;
 }
 
+/** Backwards-compat alias — older code (tests, stored docs) still references
+ *  `Country`. New code should use `Asset`. */
+export type Country = Asset;
+
 export interface PairCandidate {
-  a: Country;
-  b: Country;
-  bucket: Bucket;
+  a: Asset;
+  b: Asset;
+  category: AssetCategory; // replaces `bucket`
   cointPValue?: number;
   correlation?: number;
   halfLife?: number;
@@ -37,10 +43,10 @@ export interface PairCandidate {
 }
 
 export interface SignalRow {
-  pairKey: string;            // `${aIso}-${bIso}`
+  pairKey: string;
   a: string;
   b: string;
-  bucket: Bucket;
+  category: AssetCategory;
   beta: number;
   alpha: number;
   residual: number;
@@ -50,24 +56,24 @@ export interface SignalRow {
   cointPValue: number;
   correlation: number;
   status: 'tradeable' | 'regime-broken';
-  asOf: string;               // ISO date
+  asOf: string;
 }
 
 export interface TradingRules {
-  entryZ: number;             // default 2.0
-  exitZ: number;              // default 0.5
-  stopZ: number;              // default 3.5
-  maxHoldingDays: number;     // default 60
-  costBpsRoundTrip: number;   // default 30
+  entryZ: number;
+  exitZ: number;
+  stopZ: number;
+  maxHoldingDays: number;
+  costBpsRoundTrip: number;
   sizing: 'equalWeight' | 'inverseVol';
 }
 
 export interface BacktestConfig {
   rules: TradingRules;
-  startDate: string;          // ISO
-  endDate: string;            // ISO
-  notional: number;           // total portfolio notional in USD
-  dv01YearsProxy: number;     // default 7
+  startDate: string;
+  endDate: string;
+  notional: number;
+  dv01YearsProxy: number;
 }
 
 export interface TradeLogEntry {

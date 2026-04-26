@@ -1,9 +1,15 @@
 "use client";
 
-import { CountryDto } from "@/lib/api/rv";
+import { AssetDto } from "@/lib/api/rv";
 import { cn } from "@/lib/utils";
 
-function Badge({ children, variant = "secondary" }: { children: React.ReactNode; variant?: "secondary" | "outline" }) {
+function Badge({
+  children,
+  variant = "secondary",
+}: {
+  children: React.ReactNode;
+  variant?: "secondary" | "outline";
+}) {
   return (
     <span
       className={cn(
@@ -18,36 +24,45 @@ function Badge({ children, variant = "secondary" }: { children: React.ReactNode;
   );
 }
 
-export function UniverseTable({ countries }: { countries: CountryDto[] }) {
+const SOURCE_LABEL: Record<AssetDto["source"], string> = {
+  fred: "FRED",
+  yahoo: "Yahoo",
+};
+
+export function UniverseTable({ countries }: { countries: AssetDto[] }) {
   return (
     <div className="overflow-hidden rounded-lg border border-border/60">
       <table className="w-full table-auto">
         <thead className="bg-muted/30">
           <tr className="text-left">
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">ISO</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Country</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Region</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Rating</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">IG/HY</th>
+            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">ID</th>
+            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Name</th>
+            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Category</th>
             <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Tags</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium text-right">Debt/GDP</th>
+            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Source</th>
+            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium text-right">Series</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
           {countries.map((c) => (
             <tr key={c.iso} className="transition-colors hover:bg-muted/30">
-              <td className="px-4 py-3 font-mono text-sm">{c.iso}</td>
+              <td className="px-4 py-3 font-mono text-xs">{c.iso}</td>
               <td className="px-4 py-3 text-sm">{c.name}</td>
-              <td className="px-4 py-3 text-sm">{c.region}</td>
-              <td className="px-4 py-3 text-sm">{c.rating}</td>
-              <td className="px-4 py-3">
-                <Badge variant={c.igHy === "IG" ? "secondary" : "outline"}>{c.igHy}</Badge>
+              <td className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground">
+                {c.category}
               </td>
               <td className="px-4 py-3 space-x-1">
-                {c.oilExporter && <Badge variant="outline">Oil</Badge>}
-                {c.commodityExporter && <Badge variant="outline">Commodity</Badge>}
+                {c.region && <Badge variant="outline">{c.region}</Badge>}
+                {c.igHy && <Badge variant={c.igHy === "IG" ? "secondary" : "outline"}>{c.igHy}</Badge>}
               </td>
-              <td className="px-4 py-3 text-right text-sm font-mono tabular-nums">{c.debtToGdp}%</td>
+              <td className="px-4 py-3">
+                <Badge variant={c.source === "fred" ? "secondary" : "outline"}>
+                  {SOURCE_LABEL[c.source]}
+                </Badge>
+              </td>
+              <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
+                {c.seriesId}
+              </td>
             </tr>
           ))}
         </tbody>

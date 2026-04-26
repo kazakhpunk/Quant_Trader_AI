@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UNIVERSE } from './universe';
 import { FredClient } from './fred-client';
+import { YahooSeriesClient } from './yahoo-client';
 import { runPairPipeline, DEFAULT_PIPELINE_CONFIG } from './pair-pipeline';
 import { buildSignal } from './signal-service';
 import { runBacktest } from './backtest-engine';
@@ -11,7 +12,14 @@ const FRED_CACHE_MS = 6 * 60 * 60 * 1000;        // 6h
 const HISTORY_DAYS = 5 * 365;                    // 5y default lookback
 
 export class RvController {
-  constructor(private store: RvStore, private fred: FredClient) {}
+  private yahoo: YahooSeriesClient;
+
+  constructor(private store: RvStore, private fred: FredClient) {
+    this.yahoo = new YahooSeriesClient({
+      cacheGet: (k) => store.getCachedFred(k, FRED_CACHE_MS),
+      cacheSet: (k, obs) => store.setCachedFred(k, obs),
+    });
+  }
 
   getUniverse = async (_req: Request, res: Response) => {
     res.json({ universe: UNIVERSE });
@@ -23,16 +31,18 @@ export class RvController {
     const start = startDate.toISOString().slice(0, 10);
     const out = new Map<string, { dates: string[]; values: number[] }>();
     for (const c of UNIVERSE) {
-      const key = `${c.fredOasSeriesId}|${start}|${end}`;
-      const cached = await this.store.getCachedFred(key, FRED_CACHE_MS);
-      let obs = cached;
-      if (!obs) {
-        try {
-          obs = await this.fred.getSeries(c.fredOasSeriesId, start, end);
-          await this.store.setCachedFred(key, obs);
-        } catch (e) { continue; }
+      try {
+        const obs = c.source === 'yahoo'
+          ? await this.yahoo.getSeries(c.seriesId, start, end)
+          : await this.fred.getSeries(c.seriesId, start, end);
+        if (!obs.length) continue;
+        out.set(c.iso, { dates: obs.map(o => o.date), values: obs.map(o => o.value) });
+      } catch (e: any) {
+        console.warn(
+          `[rv] series fetch failed for ${c.iso} (${c.source}:${c.seriesId}):`,
+          e?.response?.status, e?.response?.data?.error_message || e?.message
+        );
       }
-      out.set(c.iso, { dates: obs.map(o => o.date), values: obs.map(o => o.value) });
     }
     return out;
   }

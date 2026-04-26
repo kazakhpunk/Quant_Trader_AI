@@ -25,7 +25,7 @@ export function PairTable({ pairs }: { pairs: PairDto[] }) {
         <TableHeader>
           <TableRow>
             <TableHead>Pair</TableHead>
-            <TableHead>Bucket</TableHead>
+            <TableHead>Category</TableHead>
             <TableHead className="text-right">Coint p</TableHead>
             <TableHead className="text-right">Corr</TableHead>
             <TableHead className="text-right">Half-life</TableHead>
@@ -38,7 +38,7 @@ export function PairTable({ pairs }: { pairs: PairDto[] }) {
           {filtered.map(p => (
             <TableRow key={`${p.a.iso}-${p.b.iso}`}>
               <TableCell className="font-mono">{p.a.iso}-{p.b.iso}</TableCell>
-              <TableCell>{p.bucket}</TableCell>
+              <TableCell>{p.category}</TableCell>
               <TableCell className="text-right">{p.cointPValue?.toFixed(3) ?? "—"}</TableCell>
               <TableCell className="text-right">{p.correlation?.toFixed(2) ?? "—"}</TableCell>
               <TableCell className="text-right">{p.halfLife != null ? p.halfLife.toFixed(1) : "—"}</TableCell>

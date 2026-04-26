@@ -1,9 +1,9 @@
 import { runPairPipeline, PipelineConfig } from '../pair-pipeline';
-import { Country } from '../rv-types';
+import { Asset } from '../rv-types';
 
-const COUNTRY_A: Country = { iso: 'AAA', name: 'A', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'A' };
-const COUNTRY_B: Country = { iso: 'BBB', name: 'B', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'B' };
-const COUNTRY_C: Country = { iso: 'CCC', name: 'C', region: 'Asia', rating: 5,  oilExporter: false, commodityExporter: false, igHy: 'IG', debtToGdp: 50, fredOasSeriesId: 'C' };
+const COUNTRY_A: Asset = { iso: 'AAA', name: 'A', category: 'rating', source: 'fred', seriesId: 'A' };
+const COUNTRY_B: Asset = { iso: 'BBB', name: 'B', category: 'rating', source: 'fred', seriesId: 'B' };
+const COUNTRY_C: Asset = { iso: 'CCC', name: 'C', category: 'rating', source: 'fred', seriesId: 'C' };
 
 function genWalk(n: number, seed = 1): number[] {
   let s = 100, out: number[] = [];

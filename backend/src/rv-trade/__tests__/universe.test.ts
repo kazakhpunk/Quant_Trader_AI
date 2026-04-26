@@ -1,51 +1,45 @@
-import { UNIVERSE, bucketsForCountry, allBuckets, pairsWithinBuckets } from '../universe';
+import { UNIVERSE, ASSET_CATEGORIES, pairsWithinCategories } from '../universe';
 
 describe('universe', () => {
-  it('contains 15 countries', () => {
-    expect(UNIVERSE).toHaveLength(15);
+  it('contains a meaningful number of real assets', () => {
+    expect(UNIVERSE.length).toBeGreaterThanOrEqual(15);
   });
 
-  it('every country has required fields', () => {
-    for (const c of UNIVERSE) {
-      expect(c.iso).toMatch(/^[A-Z]{3}$/);
-      expect(c.name).toBeTruthy();
-      expect(c.region).toMatch(/LatAm|EMEA|Asia|MENA/);
-      expect(c.rating).toBeGreaterThanOrEqual(1);
-      expect(c.rating).toBeLessThanOrEqual(22);
-      expect(typeof c.oilExporter).toBe('boolean');
-      expect(c.igHy).toMatch(/IG|HY/);
-      expect(c.fredOasSeriesId).toMatch(/^BAML/);
+  it('every asset has the required fields', () => {
+    for (const a of UNIVERSE) {
+      expect(a.iso).toMatch(/^[a-z]+-[a-z0-9-]+$/);
+      expect(a.name).toBeTruthy();
+      expect(ASSET_CATEGORIES).toContain(a.category);
+      expect(a.source === 'fred' || a.source === 'yahoo').toBe(true);
+      expect(a.seriesId).toBeTruthy();
+      // FRED EM OAS ids start with BAML; Yahoo tickers are short alphanumeric.
+      if (a.source === 'fred') expect(a.seriesId).toMatch(/^BAML/);
+      if (a.source === 'yahoo') expect(a.seriesId).toMatch(/^[A-Z]+$/);
     }
   });
 
-  it('bucketsForCountry returns at least one bucket', () => {
-    const brazil = UNIVERSE.find(c => c.iso === 'BRA')!;
-    expect(bucketsForCountry(brazil).length).toBeGreaterThan(0);
+  it('asset ids are unique', () => {
+    const ids = UNIVERSE.map(a => a.iso);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('pairsWithinBuckets returns unordered, deduped pairs', () => {
-    const pairs = pairsWithinBuckets(UNIVERSE);
+  it('every category has at least one asset', () => {
+    for (const cat of ASSET_CATEGORIES) {
+      expect(UNIVERSE.some(a => a.category === cat)).toBe(true);
+    }
+  });
+
+  it('pairsWithinCategories returns unordered, deduped same-category pairs', () => {
+    const pairs = pairsWithinCategories(UNIVERSE);
     const seen = new Set<string>();
     for (const p of pairs) {
       const key = [p.a.iso, p.b.iso].sort().join('|');
       expect(seen.has(key)).toBe(false);
       seen.add(key);
       expect(p.a.iso).not.toBe(p.b.iso);
-      expect(p.bucket).toBeTruthy();
+      expect(p.a.category).toBe(p.b.category);
+      expect(p.category).toBe(p.a.category);
     }
-    expect(pairs.length).toBeGreaterThan(20);
-    expect(pairs.length).toBeLessThan(120);
-  });
-
-  it('every country belongs to at least one bucket', () => {
-    for (const c of UNIVERSE) {
-      expect(bucketsForCountry(c).length).toBeGreaterThan(0);
-    }
-  });
-
-  it('allBuckets enumerates all 8 bucket values', () => {
-    expect(allBuckets).toHaveLength(8);
-    const required = ['oilExporters','commodityExporters','latamIG','latamHY','cee','gcc','asiaIG','frontier'];
-    for (const b of required) expect(allBuckets).toContain(b);
+    expect(pairs.length).toBeGreaterThan(10);
   });
 });

@@ -1,13 +1,23 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
-export interface CountryDto {
-  iso: string; name: string; region: string; rating: number;
-  oilExporter: boolean; commodityExporter: boolean; igHy: 'IG' | 'HY';
-  debtToGdp: number; fredOasSeriesId: string;
+export type AssetSource = 'fred' | 'yahoo';
+export type AssetCategory = 'overall' | 'region' | 'rating' | 'grade' | 'sector' | 'etf';
+
+export interface AssetDto {
+  iso: string;            // unique short id
+  name: string;
+  category: AssetCategory;
+  source: AssetSource;
+  seriesId: string;
+  region?: string;
+  igHy?: 'IG' | 'HY';
+  description?: string;
 }
+/** @deprecated use AssetDto */
+export type CountryDto = AssetDto;
 
 export interface PairDto {
-  a: CountryDto; b: CountryDto; bucket: string;
+  a: AssetDto; b: AssetDto; category: AssetCategory;
   cointPValue?: number; correlation?: number; halfLife?: number;
   beta?: number; alpha?: number;
   status: 'candidate' | 'active' | 'rejected';
@@ -15,7 +25,7 @@ export interface PairDto {
 }
 
 export interface SignalDto {
-  pairKey: string; a: string; b: string; bucket: string;
+  pairKey: string; a: string; b: string; category: AssetCategory;
   beta: number; alpha: number; residual: number;
   z: number; delta5d: number; halfLife: number;
   cointPValue: number; correlation: number;
@@ -62,7 +72,7 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const rvApi = {
-  getUniverse: () => http<{ universe: CountryDto[] }>(`${API_BASE}/api/v4/rv/universe`),
+  getUniverse: () => http<{ universe: AssetDto[] }>(`${API_BASE}/api/v4/rv/universe`),
   getPairs:    () => http<{ pairs: PairDto[]; config: any }>(`${API_BASE}/api/v4/rv/pairs`),
   getSignals:  () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals`),
   refreshSignals: () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals/refresh`, { method: 'POST' }),

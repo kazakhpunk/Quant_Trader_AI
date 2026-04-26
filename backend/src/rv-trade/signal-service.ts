@@ -32,7 +32,7 @@ export function buildSignal(pair: PairCandidate, ySeries: number[], xSeries: num
 
   return {
     pairKey: `${pair.a.iso}-${pair.b.iso}`,
-    a: pair.a.iso, b: pair.b.iso, bucket: pair.bucket,
+    a: pair.a.iso, b: pair.b.iso, category: pair.category,
     beta, alpha, residual, z, delta5d,
     halfLife: pair.halfLife ?? Infinity,
     cointPValue: pair.cointPValue ?? 1,

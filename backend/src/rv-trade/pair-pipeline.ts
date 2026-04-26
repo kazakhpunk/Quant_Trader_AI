@@ -1,5 +1,5 @@
-import { Country, PairCandidate } from './rv-types';
-import { pairsWithinBuckets } from './universe';
+import { Asset, PairCandidate } from './rv-types';
+import { pairsWithinCategories } from './universe';
 import { engleGranger, pearson, ouHalfLife } from './stats';
 
 export interface PipelineConfig {
@@ -14,11 +14,11 @@ export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
 };
 
 export function runPairPipeline(
-  universe: Country[],
+  universe: Asset[],
   series: Map<string, number[]>,
   config: PipelineConfig = DEFAULT_PIPELINE_CONFIG,
 ): PairCandidate[] {
-  const candidates = pairsWithinBuckets(universe);
+  const candidates = pairsWithinCategories(universe);
   const out: PairCandidate[] = [];
   for (const c of candidates) {
     const yArr = series.get(c.a.iso);
@@ -28,7 +28,7 @@ export function runPairPipeline(
     if (len < 60) continue;
     const y = yArr.slice(-len), x = xArr.slice(-len);
 
-    let pair: PairCandidate = { a: c.a, b: c.b, bucket: c.bucket, status: 'candidate' };
+    let pair: PairCandidate = { a: c.a, b: c.b, category: c.category, status: 'candidate' };
 
     // 1. Engle-Granger cointegration
     let eg;

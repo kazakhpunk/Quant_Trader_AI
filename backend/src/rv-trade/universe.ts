@@ -1,55 +1,78 @@
-import { Country, Bucket } from './rv-types';
+import { Asset, AssetCategory } from './rv-types';
 
-export const UNIVERSE: Country[] = [
-  // S&P numeric: AAA=1, AA+=2, AA=3, AA-=4, A+=5, A=6, A-=7, BBB+=8, BBB=9, BBB-=10,
-  //              BB+=11, BB=12, BB-=13, B+=14, B=15, B-=16, CCC+=17, CCC=18, CCC-=19, CC=20, C=21, D=22
-  { iso: 'BRA', name: 'Brazil',       region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true,  igHy: 'HY', debtToGdp: 86, fredOasSeriesId: 'BAMLEM4BRRBLCRPIUSOAS' },
-  { iso: 'MEX', name: 'Mexico',       region: 'LatAm', rating: 9,  oilExporter: true,  commodityExporter: true,  igHy: 'IG', debtToGdp: 53, fredOasSeriesId: 'BAMLEM4BRRMLCRPIUSOAS' },
-  { iso: 'COL', name: 'Colombia',     region: 'LatAm', rating: 11, oilExporter: true,  commodityExporter: true,  igHy: 'HY', debtToGdp: 60, fredOasSeriesId: 'BAMLEM4BRRCLCRPIUSOAS' },
-  { iso: 'CHL', name: 'Chile',        region: 'LatAm', rating: 6,  oilExporter: false, commodityExporter: true,  igHy: 'IG', debtToGdp: 38, fredOasSeriesId: 'BAMLEM4BRRCHLCRPIUSOAS' },
-  { iso: 'PER', name: 'Peru',         region: 'LatAm', rating: 9,  oilExporter: false, commodityExporter: true,  igHy: 'IG', debtToGdp: 33, fredOasSeriesId: 'BAMLEM4BRRPELCRPIUSOAS' },
-  { iso: 'TUR', name: 'Turkey',       region: 'EMEA',  rating: 14, oilExporter: false, commodityExporter: false, igHy: 'HY', debtToGdp: 30, fredOasSeriesId: 'BAMLEM4BRRTRLCRPIUSOAS' },
-  { iso: 'ZAF', name: 'South Africa', region: 'EMEA',  rating: 12, oilExporter: false, commodityExporter: true,  igHy: 'HY', debtToGdp: 71, fredOasSeriesId: 'BAMLEM4BRRZALCRPIUSOAS' },
-  { iso: 'POL', name: 'Poland',       region: 'EMEA',  rating: 5,  oilExporter: false, commodityExporter: false, igHy: 'IG', debtToGdp: 50, fredOasSeriesId: 'BAMLEM4BRRPLLCRPIUSOAS' },
-  { iso: 'HUN', name: 'Hungary',      region: 'EMEA',  rating: 10, oilExporter: false, commodityExporter: false, igHy: 'IG', debtToGdp: 73, fredOasSeriesId: 'BAMLEM4BRRHULCRPIUSOAS' },
-  { iso: 'ROU', name: 'Romania',      region: 'EMEA',  rating: 10, oilExporter: false, commodityExporter: false, igHy: 'IG', debtToGdp: 49, fredOasSeriesId: 'BAMLEM4BRRROLCRPIUSOAS' },
-  { iso: 'IDN', name: 'Indonesia',    region: 'Asia',  rating: 9,  oilExporter: false, commodityExporter: true,  igHy: 'IG', debtToGdp: 39, fredOasSeriesId: 'BAMLEM4BRRIDLCRPIUSOAS' },
-  { iso: 'PHL', name: 'Philippines',  region: 'Asia',  rating: 9,  oilExporter: false, commodityExporter: false, igHy: 'IG', debtToGdp: 57, fredOasSeriesId: 'BAMLEM4BRRPHLCRPIUSOAS' },
-  { iso: 'MYS', name: 'Malaysia',     region: 'Asia',  rating: 7,  oilExporter: true,  commodityExporter: true,  igHy: 'IG', debtToGdp: 67, fredOasSeriesId: 'BAMLEM4BRRMYLCRPIUSOAS' },
-  { iso: 'EGY', name: 'Egypt',        region: 'MENA',  rating: 16, oilExporter: false, commodityExporter: false, igHy: 'HY', debtToGdp: 96, fredOasSeriesId: 'BAMLEM4BRREGLCRPIUSOAS' },
-  { iso: 'NGA', name: 'Nigeria',      region: 'EMEA',  rating: 14, oilExporter: true,  commodityExporter: true,  igHy: 'HY', debtToGdp: 38, fredOasSeriesId: 'BAMLEM4BRRNGLCRPIUSOAS' },
+/** Real, publicly accessible spread / yield series. The original 15 EM-sovereign
+ *  FRED series in this file were hallucinated; FRED doesn't publish country-level
+ *  EM OAS. This rebuilds the universe from what's actually free + queryable:
+ *
+ *    1. ICE BofA EM Corporate Plus OAS series on FRED — region / rating /
+ *       grade / sector buckets (verified live against the FRED API)
+ *    2. EM bond ETFs on Yahoo Finance — basket-level price series for the
+ *       handful of cases where a tradeable proxy exists
+ */
+export const UNIVERSE: Asset[] = [
+  // ---- FRED: overall benchmark ----
+  { iso: 'fred-em',         name: 'EM Corp Plus (overall)', category: 'overall', source: 'fred', region: 'Global', seriesId: 'BAMLEMCBPIOAS' },
+
+  // ---- FRED: regional cuts ----
+  { iso: 'fred-asia',       name: 'EM Asia',                category: 'region',  source: 'fred', region: 'Asia',   seriesId: 'BAMLEMRACRPIASIAOAS' },
+  { iso: 'fred-latam',      name: 'EM Latin America',       category: 'region',  source: 'fred', region: 'LatAm',  seriesId: 'BAMLEMRLCRPILAOAS' },
+  { iso: 'fred-emea',       name: 'EM EMEA',                category: 'region',  source: 'fred', region: 'EMEA',   seriesId: 'BAMLEMRECRPIEMEAOAS' },
+  { iso: 'fred-em-eur',     name: 'EM Euro-denominated',    category: 'region',  source: 'fred', region: 'Global', seriesId: 'BAMLEMEBCRPIEOAS' },
+
+  // ---- FRED: rating buckets ----
+  { iso: 'fred-aaa-a',      name: 'AAA-A EM Corp',          category: 'rating',  source: 'fred', igHy: 'IG', seriesId: 'BAMLEM1BRRAAA2ACRPIOAS' },
+  { iso: 'fred-bbb',        name: 'BBB EM Corp',            category: 'rating',  source: 'fred', igHy: 'IG', seriesId: 'BAMLEM2BRRBBBCRPIOAS' },
+  { iso: 'fred-bb',         name: 'BB EM Corp',             category: 'rating',  source: 'fred', igHy: 'HY', seriesId: 'BAMLEM3BRRBBCRPIOAS' },
+  { iso: 'fred-b-lower',    name: 'B & Lower EM Corp',      category: 'rating',  source: 'fred', igHy: 'HY', seriesId: 'BAMLEM4BRRBLCRPIOAS' },
+  { iso: 'fred-crossover',  name: 'Crossover (BBB/BB) EM',  category: 'rating',  source: 'fred', seriesId: 'BAMLEM5BCOCRPIOAS' },
+
+  // ---- FRED: grade aggregates ----
+  { iso: 'fred-hg',         name: 'High Grade EM',          category: 'grade',   source: 'fred', igHy: 'IG', seriesId: 'BAMLEMIBHGCRPIOAS' },
+  { iso: 'fred-hy',         name: 'High Yield EM',          category: 'grade',   source: 'fred', igHy: 'HY', seriesId: 'BAMLEMHBHYCRPIOAS' },
+
+  // ---- FRED: sector cuts ----
+  { iso: 'fred-public',     name: 'Public Sector EM',       category: 'sector',  source: 'fred', seriesId: 'BAMLEMPBPUBSICRPIOAS' },
+  { iso: 'fred-private',    name: 'Private Sector EM',      category: 'sector',  source: 'fred', seriesId: 'BAMLEMPTPRVICRPIOAS' },
+  { iso: 'fred-financial',  name: 'Financial EM',           category: 'sector',  source: 'fred', seriesId: 'BAMLEMFSFCRPIOAS' },
+  { iso: 'fred-non-fin',    name: 'Non-Financial EM',       category: 'sector',  source: 'fred', seriesId: 'BAMLEMNSNFCRPIOAS' },
+
+  // ---- Yahoo: tradeable EM bond ETFs (basket prices) ----
+  { iso: 'yh-emb',  name: 'EMB · iShares JPM USD EM Bond',         category: 'etf', source: 'yahoo', seriesId: 'EMB' },
+  { iso: 'yh-emhy', name: 'EMHY · iShares EM High Yield Bond',     category: 'etf', source: 'yahoo', seriesId: 'EMHY' },
+  { iso: 'yh-emlc', name: 'EMLC · VanEck JPM EM Local Currency',   category: 'etf', source: 'yahoo', seriesId: 'EMLC' },
+  { iso: 'yh-vwob', name: 'VWOB · Vanguard EM Government Bond',    category: 'etf', source: 'yahoo', seriesId: 'VWOB' },
+  { iso: 'yh-lemb', name: 'LEMB · iShares Latin America Bonds',    category: 'etf', source: 'yahoo', seriesId: 'LEMB' },
+  { iso: 'yh-bil',  name: 'BIL · 1-3M T-Bill (cash anchor)',       category: 'etf', source: 'yahoo', seriesId: 'BIL' },
 ];
 
-export function bucketsForCountry(c: Country): Bucket[] {
-  const buckets: Bucket[] = [];
-  if (c.oilExporter) buckets.push('oilExporters');
-  if (c.commodityExporter) buckets.push('commodityExporters');
-  if (c.region === 'LatAm' && c.igHy === 'IG') buckets.push('latamIG');
-  if (c.region === 'LatAm' && c.igHy === 'HY') buckets.push('latamHY');
-  if (c.region === 'EMEA' && c.igHy === 'IG') buckets.push('cee');
-  if (c.region === 'MENA') buckets.push('gcc');
-  if (c.region === 'Asia' && c.igHy === 'IG') buckets.push('asiaIG');
-  if (c.rating >= 14) buckets.push('frontier');
-  return buckets;
-}
-
-export const allBuckets: Bucket[] = [
-  'oilExporters', 'commodityExporters', 'latamIG', 'latamHY',
-  'cee', 'gcc', 'asiaIG', 'frontier',
+export const ASSET_CATEGORIES: AssetCategory[] = [
+  'overall', 'region', 'rating', 'grade', 'sector', 'etf',
 ];
 
-export function pairsWithinBuckets(universe: Country[]): { a: Country; b: Country; bucket: Bucket }[] {
-  const seen = new Map<string, { a: Country; b: Country; bucket: Bucket }>();
-  for (const a of universe) {
-    for (const b of universe) {
-      if (a.iso >= b.iso) continue;
-      const sharedBuckets = bucketsForCountry(a).filter(x => bucketsForCountry(b).includes(x));
-      if (sharedBuckets.length === 0) continue;
-      const key = `${a.iso}-${b.iso}`;
-      if (!seen.has(key)) {
-        seen.set(key, { a, b, bucket: sharedBuckets[0] });
-      }
+/** Pair candidates: every unique unordered same-category pair. With ~20 assets
+ *  spread across 6 categories, this yields ~30-50 candidates — small enough
+ *  for the cointegration funnel to evaluate end-to-end on every signals refresh. */
+export function pairsWithinCategories(
+  universe: Asset[]
+): { a: Asset; b: Asset; category: AssetCategory }[] {
+  const out: { a: Asset; b: Asset; category: AssetCategory }[] = [];
+  const sorted = [...universe].sort((x, y) => x.iso.localeCompare(y.iso));
+  for (let i = 0; i < sorted.length; i++) {
+    for (let j = i + 1; j < sorted.length; j++) {
+      const a = sorted[i], b = sorted[j];
+      if (a.category !== b.category) continue;
+      out.push({ a, b, category: a.category });
     }
   }
-  return Array.from(seen.values());
+  return out;
 }
+
+// ---------- back-compat shim ----------
+// The original code (and one stored test) talked in "buckets" + a
+// `pairsWithinBuckets` helper. Anything still importing those names gets the
+// new category-based behavior; pre-existing call sites keep working.
+export const allBuckets = ASSET_CATEGORIES;
+export function bucketsForCountry(c: Asset): AssetCategory[] {
+  return [c.category];
+}
+export const pairsWithinBuckets = pairsWithinCategories;

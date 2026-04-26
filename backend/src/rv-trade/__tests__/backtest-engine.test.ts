@@ -1,5 +1,5 @@
 import { runBacktest, BacktestInput } from '../backtest-engine';
-import { Country, BacktestConfig } from '../rv-types';
+import { Asset, BacktestConfig } from '../rv-types';
 
 function seededRand(seed: number): () => number {
   let s = seed >>> 0;
@@ -9,8 +9,8 @@ function seededRand(seed: number): () => number {
   };
 }
 
-const A: Country = { iso: 'AAA', name: 'A', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'A' };
-const B: Country = { iso: 'BBB', name: 'B', region: 'LatAm', rating: 11, oilExporter: false, commodityExporter: true, igHy: 'HY', debtToGdp: 50, fredOasSeriesId: 'B' };
+const A: Asset = { iso: 'AAA', name: 'A', category: 'rating', source: 'fred', seriesId: 'A' };
+const B: Asset = { iso: 'BBB', name: 'B', category: 'rating', source: 'fred', seriesId: 'B' };
 
 function dates(n: number, start = '2024-01-02'): string[] {
   const out: string[] = [];
