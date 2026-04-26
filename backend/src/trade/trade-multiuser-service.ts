@@ -451,14 +451,22 @@ class TradeService {
   public async startQstash(email: string, isLiveTrading: boolean) {
     try {
       const apiUrl = "https://quanttraderai-production.up.railway.app";
+      const destination = `${apiUrl}/api/v1/monitor`;
+      const cron = "0 * * * *"; // Run every hour
+      const body = JSON.stringify({ email, isLiveTrading });
+
+      if (await this.scheduleExists(destination, cron, body)) {
+        console.log(
+          `QStash monitor schedule already exists for ${email} (isLive=${isLiveTrading})`
+        );
+        return;
+      }
 
       const response = await qstash.schedules.create({
-        destination: `${apiUrl}/api/v1/monitor`,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, isLiveTrading }),
-        cron: "0 * * * *", // Run every hour
+        destination,
+        headers: { "Content-Type": "application/json" },
+        body,
+        cron,
       });
 
       console.log("QStash schedule created successfully:", response);
@@ -480,13 +488,16 @@ class TradeService {
 
   private async scheduleExists(
     destination: string,
-    cron: string
+    cron: string,
+    body?: string
   ): Promise<boolean> {
     try {
       const schedules = await qstash.schedules.list();
       return schedules.some(
         (schedule) =>
-          schedule.destination === destination && schedule.cron === cron
+          schedule.destination === destination &&
+          schedule.cron === cron &&
+          (body === undefined || schedule.body === body)
       );
     } catch (error) {
       console.error("Error checking for existing schedule:", error);
