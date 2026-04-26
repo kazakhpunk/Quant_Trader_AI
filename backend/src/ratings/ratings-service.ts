@@ -32,6 +32,20 @@ export function normalizeSentimentRaw(s: number): number {
   return clamp01(50 + s * 5);
 }
 
+// 30-day annualized volatility (%): lower = more stable.
+// 20% ≈ market-typical → 75; 40% → 50; >80% → 0.
+export function normalizeSigma30d(sigma: number): number {
+  if (!Number.isFinite(sigma) || sigma < 0) return 50;
+  return clamp01(100 - sigma * 1.25);
+}
+
+// 30-day price return (%): higher = better.
+// 0% → 50, +20% → 100, -20% → 0.
+export function normalizePctReturn(pct: number): number {
+  if (!Number.isFinite(pct)) return 50;
+  return clamp01(50 + pct * 2.5);
+}
+
 const NEUTRAL = 50;
 
 export class RatingsService {
@@ -78,6 +92,25 @@ export class RatingsService {
         ema20: doc.ema20,
         ema50: doc.ema50,
       };
+
+      // Price + volatility live on the same technicalData doc once /update
+      // has run with the extended pipeline. Older docs without these fields
+      // stay at NEUTRAL.
+      if (typeof doc.pct30d === "number") {
+        byTicker[t].scores.price = normalizePctReturn(doc.pct30d);
+      }
+      byTicker[t].metrics.price = {
+        d1Pct: doc.pct1d,
+        d5Pct: doc.pct5d,
+        d30Pct: doc.pct30d,
+      };
+      if (typeof doc.sigma30d === "number") {
+        byTicker[t].scores.volatility = normalizeSigma30d(doc.sigma30d);
+      }
+      byTicker[t].metrics.volatility = {
+        sigma30d: doc.sigma30d,
+        atr: doc.atr14,
+      };
     }
 
     // ----- fundamental -----
@@ -101,20 +134,30 @@ export class RatingsService {
     }
 
     // ----- sentiment -----
-    // Sentiment scores live on the long/short candidate documents (one per ticker).
+    // Primary source: sentimentData (one doc per ticker, from persistAllSentiment).
+    // Fallback: long/short candidate docs for older runs that pre-date the broader pass.
+    const sentimentDocs = await this.db.collection("sentimentData").find({}).toArray();
+    for (const doc of sentimentDocs) {
+      const t = doc.ticker as string;
+      if (!t || !byTicker[t]) continue;
+      if (typeof doc.sentiment === "number") {
+        byTicker[t].scores.sentiment = normalizeSentimentRaw(doc.sentiment);
+        byTicker[t].metrics.sentiment = {
+          score: doc.sentiment,
+          newsCount: doc.newsCount,
+        };
+      }
+    }
     const longCands = await this.db.collection("longCandidates").find({}).toArray();
     const shortCands = await this.db.collection("shortCandidates").find({}).toArray();
     for (const doc of [...longCands, ...shortCands]) {
       const t = doc.ticker as string;
-      if (!t || !byTicker[t]) continue;
+      if (!t || !byTicker[t] || byTicker[t].metrics.sentiment) continue;
       if (typeof doc.sentiment === "number") {
         byTicker[t].scores.sentiment = normalizeSentimentRaw(doc.sentiment);
         byTicker[t].metrics.sentiment = { score: doc.sentiment };
       }
     }
-
-    // ----- price + volatility -----
-    // No source data; left at NEUTRAL and hidden in the UI.
 
     const out = Object.values(byTicker).map((row) => ({
       ...row,

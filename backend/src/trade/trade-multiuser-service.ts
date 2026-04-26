@@ -479,6 +479,7 @@ class TradeService {
     try {
       await this.analysisService.getAllFundamentalData();
       await this.analysisService.getAllTechnicalData();
+      await this.analysisService.persistAllSentiment();
       await this.analysisService.analyzeWithSentiment();
       console.log("Data fetch and analysis completed successfully");
     } catch (error) {

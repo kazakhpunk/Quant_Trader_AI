@@ -1,8 +1,13 @@
 import fs from "fs";
 import path from "path";
-import yahooFinance from "yahoo-finance2";
 import { Db } from "mongodb";
 import { Stock, AnalysisResult } from "./types/analysisModel";
+import {
+  getHistoricalBars,
+  getQuoteSummary,
+  getQuote,
+  searchNews,
+} from "./yahoo-client";
 import Sentiment from "sentiment";
 import { load } from "cheerio";
 import axios from "axios";
@@ -96,15 +101,9 @@ class AnalysisService {
 
   public async fetchHistoricalData(ticker: string): Promise<any[]> {
     const endDate = Math.floor(new Date().getTime() / 1000);
-    const startDate = endDate - 60 * 60 * 24 * 70; // Last 70 days in seconds
-    const queryOptions = {
-      period1: startDate,
-      period2: endDate,
-      interval: "1d" as "1d",
-    };
+    const startDate = endDate - 60 * 60 * 24 * 70;
     try {
-      const result = await yahooFinance.historical(ticker, queryOptions);
-      return result;
+      return await getHistoricalBars(ticker, startDate, endDate);
     } catch (error) {
       console.error(`Error fetching data for ticker ${ticker}:`, error);
       throw new Error(`Could not fetch historical data for ticker ${ticker}`);
@@ -132,15 +131,8 @@ class AnalysisService {
         throw new Error("Invalid scale");
     }
 
-    const queryOptions = {
-      period1: startDate,
-      period2: endDate,
-      interval: "1d" as "1d",
-    };
-
     try {
-      const result = await yahooFinance.historical(ticker, queryOptions);
-      return result;
+      return await getHistoricalBars(ticker, startDate, endDate);
     } catch (error) {
       console.error(`Error fetching data for ticker ${ticker}:`, error);
       throw new Error(`Could not fetch historical data for ticker ${ticker}`);
@@ -168,15 +160,8 @@ class AnalysisService {
         throw new Error("Invalid scale");
     }
 
-    const queryOptions = {
-      period1: startDate,
-      period2: endDate,
-      interval: "1d" as "1d",
-    };
-
     try {
-      const result = await yahooFinance.historical(ticker, queryOptions);
-      return result;
+      return await getHistoricalBars(ticker, startDate, endDate);
     } catch (error) {
       console.error(`Error fetching data for ticker ${ticker}:`, error);
       throw new Error(`Could not fetch historical data for ticker ${ticker}`);
@@ -325,13 +310,14 @@ class AnalysisService {
 
   public async getFundamentalData(ticker: string): Promise<any> {
     try {
-      const summary = await yahooFinance.quoteSummary(ticker, {
-        modules: ["financialData", "summaryDetail", "defaultKeyStatistics"],
-      });
-      return summary;
+      return await getQuoteSummary(ticker, [
+        "financialData",
+        "summaryDetail",
+        "defaultKeyStatistics",
+      ]);
     } catch (error) {
       console.error(`Error fetching fundamental data ${ticker}:`, error);
-      throw new Error("Could not fetch fundamental data for ticker ${ticker}");
+      throw new Error(`Could not fetch fundamental data for ticker ${ticker}`);
     }
   }
 
@@ -469,14 +455,7 @@ class AnalysisService {
     return rsi;
   }
 
-  public async getTechnicalData(ticker: string): Promise<{
-    ticker: string;
-    sma50: number;
-    sma20: number;
-    ema50: number;
-    ema20: number;
-    rsi14: number;
-  }> {
+  public async getTechnicalData(ticker: string): Promise<any> {
     const data = await this.fetchHistoricalData(ticker);
 
     if (!data || data.length === 0) {
@@ -484,21 +463,88 @@ class AnalysisService {
     }
 
     const closePrices = data.map((day) => day.close);
-    const sma50 = this.calculateSMA(closePrices, 50); // 50-day SMA
-    const sma20 = this.calculateSMA(closePrices, 20); // 20-day SMA
-    const ema50 = this.calculateEMA(closePrices, 50); // 50-day EMA
-    const ema20 = this.calculateEMA(closePrices, 20); // 20-day EMA
-    const rsi14 = this.calculateRSI(closePrices, 14); // 14-day RSI
+    const sma50 = this.calculateSMA(closePrices, 50);
+    const sma20 = this.calculateSMA(closePrices, 20);
+    const ema50 = this.calculateEMA(closePrices, 50);
+    const ema20 = this.calculateEMA(closePrices, 20);
+    const rsi14 = this.calculateRSI(closePrices, 14);
 
+    // ----- price snapshot + deltas (from data already fetched) -----
+    const n = closePrices.length;
+    const close = closePrices[n - 1];
+    const pctChange = (prev: number | undefined): number | null =>
+      typeof prev === "number" && prev > 0 ? ((close - prev) / prev) * 100 : null;
+    const pct1d = pctChange(closePrices[n - 2]);
+    const pct5d = pctChange(closePrices[n - 6]);
+    const pct30d = pctChange(closePrices[n - 31]);
+
+    // ----- volatility -----
+    // Annualized σ of last 30 daily returns (×100 → percent).
+    const returns: number[] = [];
+    const retStart = Math.max(1, n - 30);
+    for (let i = retStart; i < n; i++) {
+      const prev = closePrices[i - 1];
+      if (prev > 0) returns.push((closePrices[i] - prev) / prev);
+    }
+    let sigma30d: number | null = null;
+    if (returns.length > 1) {
+      const mean = returns.reduce((s, v) => s + v, 0) / returns.length;
+      const variance = returns.reduce((s, v) => s + (v - mean) ** 2, 0) / returns.length;
+      sigma30d = Math.sqrt(variance) * Math.sqrt(252) * 100;
+    }
+
+    // ATR-14: mean True Range over last 14 bars.
+    const tr: number[] = [];
+    const trStart = Math.max(1, data.length - 14);
+    for (let i = trStart; i < data.length; i++) {
+      const h = data[i].high;
+      const l = data[i].low;
+      const pc = data[i - 1].close;
+      tr.push(Math.max(h - l, Math.abs(h - pc), Math.abs(l - pc)));
+    }
+    const atr14 = tr.length ? tr.reduce((s, v) => s + v, 0) / tr.length : null;
+
+    const doc = {
+      ticker, sma50, sma20, ema50, ema20, rsi14,
+      close, pct1d, pct5d, pct30d, sigma30d, atr14,
+    };
     await this.db
       .collection("technicalData")
-      .updateOne(
-        { ticker },
-        { $set: { ticker, sma50, sma20, ema50, ema20, rsi14 } },
-        { upsert: true }
-      );
+      .updateOne({ ticker }, { $set: doc }, { upsert: true });
 
-    return { ticker, sma50, sma20, ema50, ema20, rsi14 };
+    return doc;
+  }
+
+  // Fetches news + computes sentiment for every ticker in the universe and
+  // persists to `sentimentData`. Independent of the candidate-filter logic so
+  // every ticker has a sentiment score the ratings page can display.
+  public async persistAllSentiment(): Promise<void> {
+    const tickers = Array.from(this.tickers);
+    console.log(`Persisting sentiment for ${tickers.length} tickers...`);
+    let saved = 0;
+    let failed = 0;
+    await Promise.all(
+      tickers.map(async (ticker) => {
+        try {
+          const articles = await this.analyzeSentiment(ticker);
+          const newsCount = articles?.length ?? 0;
+          const sentiment =
+            articles && newsCount > 0
+              ? articles.map((a: any) => a.score).reduce((s: number, v: number) => s + v, 0) /
+                newsCount
+              : 0;
+          await this.db.collection("sentimentData").updateOne(
+            { ticker },
+            { $set: { ticker, sentiment, newsCount, updatedAt: new Date() } },
+            { upsert: true }
+          );
+          saved++;
+        } catch (e) {
+          failed++;
+        }
+      })
+    );
+    console.log(`Sentiment persisted: ${saved} ok, ${failed} failed`);
   }
 
   public async getAllTechnicalData(): Promise<
@@ -543,7 +589,7 @@ class AnalysisService {
     ticker: string
   ): Promise<{ title: string; link: string; date: Date }[]> {
     try {
-      const news = await yahooFinance.search(ticker, { newsCount: 10 });
+      const news = await searchNews(ticker, 10);
 
       if (!news.news || news.news.length === 0) {
         throw new Error("No news articles found");
@@ -596,15 +642,10 @@ class AnalysisService {
     try {
       const newsArticles: { title: string; link: string; date: Date }[] =
         await this.getNewsArticles(ticker);
-      const sentimentScores = await Promise.all(
-        newsArticles.map(async ({ title, link, date }) => {
-          const articleContent = await this.fetchArticleContent(link);
-          const result = this.sentiment.analyze(articleContent);
-          return { title, score: result.score, date };
-        })
-      );
-
-      return sentimentScores;
+      return newsArticles.map(({ title, date }) => {
+        const result = this.sentiment.analyze(title);
+        return { title, score: result.score, date };
+      });
     } catch (error) {
       console.error(`Error analyzing sentiment for ${ticker}:`, error);
       throw new Error(`Could not analyze sentiment for ${ticker}`);
@@ -827,8 +868,7 @@ class AnalysisService {
 
   public async fetchRealTimeData(ticker: string): Promise<any> {
     try {
-      const quote = await yahooFinance.quote(ticker);
-      return quote;
+      return await getQuote(ticker);
     } catch (error) {
       console.error(
         `Error fetching real-time data for ticker ${ticker}:`,

@@ -3,8 +3,7 @@ import { getApiUrl } from "@/lib/utils";
 export const DIMENSIONS = ["technical", "fundamental", "sentiment", "price", "volatility"] as const;
 export type Dimension = (typeof DIMENSIONS)[number];
 
-// Dimensions that have data (price + volatility pipelines aren't built yet)
-export const VISIBLE_DIMENSIONS = ["technical", "fundamental", "sentiment"] as const;
+export const VISIBLE_DIMENSIONS = DIMENSIONS;
 export type VisibleDimension = (typeof VISIBLE_DIMENSIONS)[number];
 
 export interface RatingRow {
@@ -14,9 +13,9 @@ export interface RatingRow {
   metrics: Partial<{
     technical: { rsi?: number; sma20?: number; sma50?: number; ema20?: number; ema50?: number };
     fundamental: { pe?: number; pegRatio?: number; profitMargin?: number; dividendYield?: number; payoutRatio?: number };
-    sentiment: { score?: number };
+    sentiment: { score?: number; newsCount?: number };
     price: { d1Pct?: number; d5Pct?: number; d30Pct?: number };
-    volatility: { sigma30d?: number; atr?: number; beta?: number };
+    volatility: { sigma30d?: number; atr?: number };
   }>;
   asOf: string;
 }

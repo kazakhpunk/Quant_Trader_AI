@@ -28,10 +28,18 @@ export const DIMENSION_COLUMNS: Record<Dimension, Col<any>[]> = {
     { key: "payoutRatio",   label: "Payout",    get: (r) => r.metrics.fundamental?.payoutRatio,   format: (v) => `${(v * 100).toFixed(0)}%` },
   ],
   sentiment: [
-    { key: "score", label: "Sentiment", get: (r) => r.metrics.sentiment?.score, format: (v) => v.toFixed(2) },
+    { key: "score",     label: "Sentiment", get: (r) => r.metrics.sentiment?.score,     format: (v) => v.toFixed(2) },
+    { key: "newsCount", label: "Articles",  get: (r) => r.metrics.sentiment?.newsCount, format: (v) => String(v) },
   ],
-  price: [],
-  volatility: [],
+  price: [
+    { key: "d1Pct",  label: "1d %",  get: (r) => r.metrics.price?.d1Pct,  format: (v) => `${v.toFixed(2)}%` },
+    { key: "d5Pct",  label: "5d %",  get: (r) => r.metrics.price?.d5Pct,  format: (v) => `${v.toFixed(2)}%` },
+    { key: "d30Pct", label: "30d %", get: (r) => r.metrics.price?.d30Pct, format: (v) => `${v.toFixed(2)}%` },
+  ],
+  volatility: [
+    { key: "sigma30d", label: "30d σ (ann.)", get: (r) => r.metrics.volatility?.sigma30d, format: (v) => `${v.toFixed(1)}%` },
+    { key: "atr",      label: "ATR-14",       get: (r) => r.metrics.volatility?.atr,      format: (v) => v.toFixed(2) },
+  ],
 };
 
 export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows: RatingRow[] }) {
