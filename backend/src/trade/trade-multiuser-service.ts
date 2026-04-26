@@ -237,21 +237,26 @@ class TradeService {
 
     const { longCandidates, shortCandidates } =
       await this.analysisService.getCandidatesFromDB();
+    const totalCandidates = longCandidates.length + shortCandidates.length;
 
     let pool: { ticker: string; sentiment?: number; side: "buy" | "sell" }[] = [];
     if (direction !== "short")
       pool.push(...longCandidates.map((c: any) => ({ ...c, side: "buy" as const })));
     if (direction !== "long")
       pool.push(...shortCandidates.map((c: any) => ({ ...c, side: "sell" as const })));
+    const afterDirection = pool.length;
 
     if (req.isSentimentEnabled) pool = pool.filter((c) => (c.sentiment ?? 1) > 0.5);
+    const afterSentiment = pool.length;
 
     if (skipHeld) {
       const held = await this.getCurrentHoldings(req.email, req.isLiveTrading);
       pool = pool.filter((c) => !held.has(c.ticker));
     }
+    const afterSkipHeld = pool.length;
 
     pool = pool.slice(0, caps.maxPositions);
+    const afterCap = pool.length;
 
     const evenAlloc = pool.length ? req.amount / pool.length : 0;
     const maxPerPos = (caps.maxPositionPct / 100) * req.amount;
@@ -276,96 +281,75 @@ class TradeService {
       totalAllocated: +rows.reduce((s, r) => s + r.allocation, 0).toFixed(2),
       totalRequested: req.amount,
       caps,
+      diagnostics: {
+        totalCandidates,
+        afterDirection,
+        afterSentiment,
+        afterSkipHeld,
+        afterCap,
+      },
     };
   }
 
   public async monitorAndManagePositions(
     email: string,
     isLive: boolean
-  ): Promise<void> {
-    try {
-      const accessToken = await this.getAccessToken(email);
-      if (!accessToken) throw new Error("Access token is missing");
-
-      const apiUrl = this.getApiBaseUrl(isLive);
-
-      const response = await axios.get(`${apiUrl}/positions`, {
-        headers: {
-          // 'APCA-API-KEY-ID': isLive ? process.env.LIVE_API_KEY : process.env.PAPER_API_KEY,
-          // 'APCA-API-SECRET-KEY': isLive ? process.env.LIVE_SECRET_KEY : process.env.PAPER_SECRET_KEY,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const positions = response.data;
-
-      for (const position of positions) {
-        const { symbol, qty, avg_entry_price, side } = position;
-        const latestPrice = await this.getLatestPrice(symbol, email, isLive);
-
-        const stopLossThreshold = 0.99; // Example: 1% below entry price
-        const takeProfitThreshold = 1.03; // Example: 3% above entry price
-
-        const stopLossPrice = parseFloat(avg_entry_price) * stopLossThreshold;
-        const takeProfitPrice =
-          parseFloat(avg_entry_price) * takeProfitThreshold;
-
-        if (latestPrice <= stopLossPrice) {
-          await this.limiter.schedule(() =>
-            axios.post(
-              `${apiUrl}/orders`,
-              {
-                symbol,
-                qty,
-                side: "sell",
-                type: "market",
-                time_in_force: "day",
-              },
-              {
-                headers: {
-                  // 'APCA-API-KEY-ID': isLive ? process.env.LIVE_API_KEY : process.env.PAPER_API_KEY,
-                  // 'APCA-API-SECRET-KEY': isLive ? process.env.LIVE_SECRET_KEY : process.env.PAPER_SECRET_KEY,
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
-              }
-            )
-          );
-          console.log(
-            `Stop-loss order placed for ${symbol} at ${stopLossPrice}`
-          );
-        }
-
-        if (latestPrice >= takeProfitPrice) {
-          await this.limiter.schedule(() =>
-            axios.post(
-              `${apiUrl}/orders`,
-              {
-                symbol,
-                qty,
-                side: "sell",
-                type: "market",
-                time_in_force: "day",
-              },
-              {
-                headers: {
-                  // 'APCA-API-KEY-ID': isLive ? process.env.LIVE_API_KEY : process.env.PAPER_API_KEY,
-                  // 'APCA-API-SECRET-KEY': isLive ? process.env.LIVE_SECRET_KEY : process.env.PAPER_SECRET_KEY,
-                  Authorization: `Bearer ${accessToken}`,
-                  "Content-Type": "application/json",
-                },
-              }
-            )
-          );
-          console.log(
-            `Take-profit order placed for ${symbol} at ${takeProfitPrice}`
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error monitoring and managing positions:", error);
+  ): Promise<{
+    ok: boolean;
+    skipped?: string;
+    positions?: number;
+    actions?: { symbol: string; type: "stop-loss" | "take-profit"; price: number }[];
+  }> {
+    const accessToken = await this.getAccessToken(email);
+    if (!accessToken) {
+      return { ok: false, skipped: "no brokerage connected" };
     }
+
+    const apiUrl = this.getApiBaseUrl(isLive);
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    };
+
+    const { data: positions } = await axios.get(`${apiUrl}/positions`, { headers });
+
+    if (!positions?.length) {
+      return { ok: true, positions: 0, actions: [] };
+    }
+
+    const actions: { symbol: string; type: "stop-loss" | "take-profit"; price: number }[] = [];
+    const STOP_LOSS_THRESHOLD = 0.99;
+    const TAKE_PROFIT_THRESHOLD = 1.03;
+
+    for (const position of positions) {
+      const { symbol, qty, avg_entry_price } = position;
+      const latestPrice = await this.getLatestPrice(symbol, email, isLive);
+
+      const entry = parseFloat(avg_entry_price);
+      const stopLossPrice = entry * STOP_LOSS_THRESHOLD;
+      const takeProfitPrice = entry * TAKE_PROFIT_THRESHOLD;
+
+      const sellOrder = (label: string, price: number) =>
+        this.limiter.schedule(() =>
+          axios.post(
+            `${apiUrl}/orders`,
+            { symbol, qty, side: "sell", type: "market", time_in_force: "day" },
+            { headers }
+          )
+        ).then(() => {
+          console.log(`${label} order placed for ${symbol} at ${price}`);
+        });
+
+      if (latestPrice <= stopLossPrice) {
+        await sellOrder("Stop-loss", stopLossPrice);
+        actions.push({ symbol, type: "stop-loss", price: stopLossPrice });
+      } else if (latestPrice >= takeProfitPrice) {
+        await sellOrder("Take-profit", takeProfitPrice);
+        actions.push({ symbol, type: "take-profit", price: takeProfitPrice });
+      }
+    }
+
+    return { ok: true, positions: positions.length, actions };
   }
 
   public async executeTrades(

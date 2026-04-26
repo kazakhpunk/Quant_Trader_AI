@@ -11,6 +11,7 @@ class TradeController {
     this.executeTrades = this.executeTrades.bind(this);
     this.getLatestPrice = this.getLatestPrice.bind(this);
     this.startMonitoringCronJob = this.startMonitoringCronJob.bind(this);
+    this.monitorAndManagePositions = this.monitorAndManagePositions.bind(this);
     this.isMarketOpen = this.isMarketOpen.bind(this);
     this.fetchAndAnalyzeData = this.fetchAndAnalyzeData.bind(this);
     this.placeOrder = this.placeOrder.bind(this);
@@ -83,8 +84,12 @@ class TradeController {
   ): Promise<void> {
     try {
       const { email, isLiveTrading } = req.body;
-      await this.tradeService.monitorAndManagePositions(email, isLiveTrading);
-      res.status(200).json({ message: "Monitoring positions was successful" });
+      if (!email) {
+        res.status(400).json({ error: "email is required" });
+        return;
+      }
+      const result = await this.tradeService.monitorAndManagePositions(email, isLiveTrading);
+      res.status(200).json(result);
     } catch (error: any) {
       console.error("Error monitoring :", error);
       res.status(500).json({ error: error.message });
