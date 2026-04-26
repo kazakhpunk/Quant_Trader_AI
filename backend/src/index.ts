@@ -8,7 +8,8 @@ import createAuthRouter from './auth/auth-router';
 import createRatingsRouter from './ratings/ratings-router';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
-import dashboardRouter from './dashboard/dash-router'
+import dashboardRouter from './dashboard/dash-router';
+import { createRvRouter } from './rv-trade/rv-router';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -58,6 +59,9 @@ const startServer = async () => {
     app.use('/api/', authRouter);
 
     app.use('/api/v4', dashboardRouter);
+
+    const rvRouter = createRvRouter(db);
+    app.use('/api/v4', rvRouter);
 
     app.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);

@@ -8,6 +8,7 @@ import {
   LucideIcon,
   Brain,
   CandlestickChart,
+  Activity,
 } from "lucide-react";
 
 import {
@@ -60,6 +61,18 @@ export function getMenuList(pathname: string): Group[] {
           active: pathname.includes("/trade"),
           icon: CandlestickChart,
           submenus: [],
+        },
+        {
+          href: "/rv-trade",
+          label: "RV Trade",
+          active: pathname.startsWith("/rv-trade"),
+          icon: Activity,
+          submenus: [
+            { href: "/rv-trade",          label: "Universe",  active: pathname === "/rv-trade" },
+            { href: "/rv-trade/pairs",    label: "Pairs",     active: pathname === "/rv-trade/pairs" },
+            { href: "/rv-trade/signals",  label: "Signals",   active: pathname === "/rv-trade/signals" },
+            { href: "/rv-trade/backtest", label: "Backtest",  active: pathname.startsWith("/rv-trade/backtest") },
+          ],
         },
       ],
     },
