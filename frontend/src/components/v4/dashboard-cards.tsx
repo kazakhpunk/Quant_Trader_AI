@@ -419,7 +419,7 @@ const Dashboard = () => {
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleCancelOrder(o.id, o.symbol); }}
                         disabled={busyId === `ord:${o.id}`}
-                        className="inline-flex items-center gap-1 rounded-md border border-border/70 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground transition hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
+                        className="inline-flex items-center gap-1 rounded-md border border-border/70 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground transition hover:border-rose-400/60 hover:bg-rose-50/50 hover:text-rose-700 disabled:opacity-50 dark:hover:border-rose-700/60 dark:hover:bg-rose-950/30 dark:hover:text-rose-300"
                         title={`Cancel order on ${o.symbol}`}
                       >
                         <X className="h-3 w-3" />
@@ -482,20 +482,23 @@ function Kpi({
 
 function StatusBadge({ status }: { status: string }) {
   const s = status.toLowerCase();
-  let cls =
-    "bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground";
+  // Neutral default; semantic palettes for terminal states; sky-blue (not
+  // amber) for in-flight pending states — reads as "in progress" without
+  // the warning vibe yellow tends to give.
+  let cls = "border border-border/60 text-muted-foreground";
   if (s === "filled" || s === "closed") {
     cls =
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300";
+      "border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400";
   } else if (s === "canceled" || s === "rejected" || s === "expired") {
-    cls = "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300";
+    cls = "border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400";
   } else if (s === "new" || s === "accepted" || s === "pending_new") {
-    cls = "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300";
+    cls =
+      "border border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-400";
   }
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
         cls
       )}
     >
@@ -506,10 +509,12 @@ function StatusBadge({ status }: { status: string }) {
 
 function RatingCell({ row }: { row: RatingRow | undefined }) {
   if (!row) return <span className="text-muted-foreground">—</span>;
+  // Drop the amber middle band — it read as a warning. Mid scores now use
+  // a neutral pill so "average rating" looks descriptive, not cautionary.
   const cls =
-    row.composite >= 75 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-    : row.composite >= 50 ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-    : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300";
+    row.composite >= 75 ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+    : row.composite >= 50 ? "border border-border/60 text-foreground"
+    : "border border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400";
   return (
     <TooltipProvider>
       <Tooltip>
