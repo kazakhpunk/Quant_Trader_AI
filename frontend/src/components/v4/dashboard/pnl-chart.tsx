@@ -30,7 +30,7 @@ const PERIOD_LABEL: Record<Period, string> = {
 };
 
 const chartConfig = {
-  pnl: { label: "Account P&L", color: "hsl(var(--chart-1))" },
+  pnl: { label: "Unrealized P&L", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 interface HistoryPayload {
@@ -133,7 +133,7 @@ export function PnlChart({ isLiveTrading }: { isLiveTrading: boolean }) {
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 bg-muted/20 px-5 py-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Account P&amp;L{baseDate ? ` · since ${baseDate}` : ""}
+            Unrealized P&amp;L{baseDate ? ` · since ${baseDate}` : ""}
           </p>
           <div className="mt-1 flex items-baseline gap-3">
             <span
@@ -161,7 +161,7 @@ export function PnlChart({ isLiveTrading }: { isLiveTrading: boolean }) {
             </span>
           </div>
           <p className="mt-1 text-[10px] text-muted-foreground">
-            Total account equity P&amp;L over the selected window — includes realized trades, dividends and interest. Differs from the KPI strip, which shows only unrealized P&amp;L on currently held positions.
+            Mark-to-market on currently held positions. Rightmost bar matches the KPI strip&apos;s P&amp;L.
           </p>
         </div>
         <div className="flex items-center rounded-md border border-border/70 bg-background p-0.5">

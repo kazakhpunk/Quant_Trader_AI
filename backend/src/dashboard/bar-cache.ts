@@ -65,15 +65,18 @@ async function fetchYahooSlice(
     .filter((b) => Number.isFinite(b.close));
 }
 
-/** Alpaca's market-data API. Works from any IP (unlike Yahoo, which Railway
- *  egress IPs frequently get blocked / rate-limited from), and uses the
- *  user's existing OAuth token (`data` scope). Free tier returns IEX feed,
- *  which is fine for daily closes. */
+/** Alpaca's market-data API. Uses developer API key + secret (NOT user
+ *  OAuth tokens — those are rejected with code 40110000 due to
+ *  IEX/Polygon licensing). Works from any IP, unlike Yahoo which Railway's
+ *  egress IPs frequently get blocked from. Set APCA_API_KEY_ID +
+ *  APCA_API_SECRET_KEY env vars on the server (free Alpaca developer
+ *  account at https://app.alpaca.markets/account/api-keys). */
 async function fetchAlpacaSlice(
-  token: string,
   symbol: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  apiKey: string,
+  apiSecret: string,
 ): Promise<{ date: string; close: number }[]> {
   const out: { date: string; close: number }[] = [];
   let pageToken: string | undefined;
@@ -81,7 +84,10 @@ async function fetchAlpacaSlice(
     const r: any = await axios.get(
       `https://data.alpaca.markets/v2/stocks/${encodeURIComponent(symbol)}/bars`,
       {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'APCA-API-KEY-ID': apiKey,
+          'APCA-API-SECRET-KEY': apiSecret,
+        },
         params: {
           timeframe: '1Day',
           start: `${startDate}T00:00:00Z`,
@@ -104,17 +110,19 @@ async function fetchAlpacaSlice(
   return out;
 }
 
-/** Try Alpaca first (reliable from Railway), fall back to Yahoo (works
- *  locally) only if Alpaca refuses or no token is available. */
+/** Try Alpaca's data API first (reliable from Railway, requires developer
+ *  key+secret env vars), fall back to Yahoo (works locally / if Alpaca env
+ *  vars aren't configured). */
 async function fetchBarsSlice(
   symbol: string,
   startDate: string,
   endDate: string,
-  token?: string,
 ): Promise<{ date: string; close: number }[]> {
-  if (token) {
+  const apiKey = process.env.APCA_API_KEY_ID;
+  const apiSecret = process.env.APCA_API_SECRET_KEY;
+  if (apiKey && apiSecret) {
     try {
-      const bars = await fetchAlpacaSlice(token, symbol, startDate, endDate);
+      const bars = await fetchAlpacaSlice(symbol, startDate, endDate, apiKey, apiSecret);
       if (bars.length) return bars;
     } catch (e: any) {
       console.warn(
@@ -145,7 +153,6 @@ export async function getCachedDailyBars(
   symbol: string,
   startDate: string,
   endDate: string,
-  token?: string,
 ): Promise<{ date: string; close: number }[]> {
   const col = db.collection(COLLECTION);
   const cached = (await col.findOne({ _id: symbol as any })) as CachedDoc | null;
@@ -165,7 +172,7 @@ export async function getCachedDailyBars(
     // chart looked identical across selections.
     if (headMissing) {
       try {
-        const slice = await fetchBarsSlice(symbol, startDate, cached.earliestDate, token);
+        const slice = await fetchBarsSlice(symbol, startDate, cached.earliestDate);
         if (slice.length) {
           merged = mergeBars(slice, merged);
           didBackfill = true;
@@ -180,7 +187,7 @@ export async function getCachedDailyBars(
         // any provisional value from a prior intraday hit
         const tailStart = cached.latestDate;
         const tailEnd = endDate > today ? today : endDate;
-        const slice = await fetchBarsSlice(symbol, tailStart, tailEnd, token);
+        const slice = await fetchBarsSlice(symbol, tailStart, tailEnd);
         if (slice.length) {
           merged = mergeBars(merged, slice);
           didBackfill = true;
@@ -215,7 +222,7 @@ export async function getCachedDailyBars(
   // controller's catch (which would zero the symbol out).
   let bars: { date: string; close: number }[] = [];
   try {
-    bars = await fetchBarsSlice(symbol, startDate, endDate, token);
+    bars = await fetchBarsSlice(symbol, startDate, endDate);
   } catch (e) {
     console.warn(`[bar-cache] cold fetch failed for ${symbol}:`, (e as Error).message);
   }

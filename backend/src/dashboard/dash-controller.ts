@@ -7,6 +7,13 @@ import {
   fetchPortfolioHistory,
   PortfolioPeriod,
 } from './dash-service';
+import { getCachedDailyBars } from './bar-cache';
+
+const PERIOD_DAYS: Record<string, number> = {
+  '1W': 7, '1M': 30, '3M': 90, '1A': 365, all: 365 * 3,
+};
+
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
 export const getDashboardData = async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -40,46 +47,98 @@ export const getPortfolioHistory = async (req: Request, res: Response) => {
   }
 };
 
-/** Account-level P&L history. Backed by Alpaca's
- *  `/v2/account/portfolio/history`, which is the only OAuth-friendly path
- *  for time-series P&L (Alpaca's market-data API rejects OAuth tokens with
- *  40110000 due to IEX/Polygon licensing — confirmed via Alpaca dev forum).
- *  Returns the same { timestamp, pnl, pct, base_value } shape the frontend
- *  expects so the chart code stays unchanged. */
-export const makeGetPositionsPnlHistory = (_db: Db) =>
+/** Per-position MTM unrealized P&L over time. Sums (close[d] − avg_entry) × qty
+ *  across all currently held positions per day. Rightmost bar converges to
+ *  the KPI strip's unrealized P&L number. The historical bars come from a
+ *  Mongo-persistent per-symbol cache that prefers Alpaca's data API
+ *  (with developer key + secret env vars) over Yahoo (which Railway egress
+ *  IPs frequently get blocked from). */
+export const makeGetPositionsPnlHistory = (db: Db) =>
   async (req: Request, res: Response) => {
     const token = req.headers.authorization?.split(' ')[1];
     const isLive = !!req.body.isLive;
-    const period = (req.body.period as PortfolioPeriod) || '1M';
+    const period = (req.body.period as string) || '1M';
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 
     try {
-      const data = await fetchPortfolioHistory(token, isLive, period);
+      const positionsRaw = await fetchPositions(token, isLive);
+      const positions = (positionsRaw ?? [])
+        .map((p: any) => ({
+          symbol: String(p.symbol),
+          qty: Number(p.qty),
+          avgEntryPrice: Number(p.avg_entry_price),
+        }))
+        .filter((p) => Number.isFinite(p.qty) && Number.isFinite(p.avgEntryPrice));
 
-      // Alpaca returns parallel arrays. profit_loss is in dollars,
-      // profit_loss_pct is supposed to be a fraction (0.01 = 1%) — but on
-      // paper accounts Alpaca often returns 0s for profit_loss_pct even
-      // when profit_loss is non-zero. Derive pct from pnl/base_value so
-      // the sign and magnitude always agree with the dollar number.
-      // *100 since the frontend appends '%' to the raw value.
-      const ts = (data.timestamp ?? []) as number[];
-      const pnl = ((data.profit_loss ?? []) as number[]).map(
-        (v) => +Number(v).toFixed(2),
-      );
-      const base_value = +Number(data.base_value ?? 0).toFixed(2);
-      const pct = pnl.map((v) =>
-        base_value > 0 ? +((v / base_value) * 100).toFixed(4) : 0,
+      if (!positions.length) {
+        return res.json({ timestamp: [], pnl: [], pct: [], base_value: 0 });
+      }
+
+      const days = PERIOD_DAYS[period] ?? 30;
+      const endDate = isoDay(new Date());
+      const startDate = isoDay(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
+
+      const positionData = await Promise.all(
+        positions.map(async (p) => {
+          try {
+            const bars = await getCachedDailyBars(db, p.symbol, startDate, endDate);
+            return { ...p, bars };
+          } catch {
+            return { ...p, bars: [] as { date: string; close: number }[] };
+          }
+        })
       );
 
-      res.json({ timestamp: ts, pnl, pct, base_value });
+      const dateSet = new Set<string>();
+      for (const p of positionData) for (const b of p.bars) dateSet.add(b.date);
+      const dates = Array.from(dateSet).sort();
+      if (!dates.length) {
+        return res.json({ timestamp: [], pnl: [], pct: [], base_value: 0 });
+      }
+
+      const indexed = positionData.map((p) => {
+        const byDate = new Map<string, number>();
+        for (const b of p.bars) byDate.set(b.date, b.close);
+        return { ...p, byDate, sortedDs: Array.from(byDate.keys()).sort() };
+      });
+
+      // Cost basis is dollars-at-risk; |qty| keeps shorts (negative qty)
+      // from subtracting from longs and flipping the % sign relative to $.
+      const baseline = positions.reduce(
+        (s, p) => s + Math.abs(p.avgEntryPrice * p.qty),
+        0,
+      );
+
+      const pnl = dates.map((date) => {
+        let total = 0;
+        for (const p of indexed) {
+          let close = p.byDate.get(date);
+          if (close == null) {
+            for (let i = p.sortedDs.length - 1; i >= 0; i--) {
+              if (p.sortedDs[i] <= date) {
+                close = p.byDate.get(p.sortedDs[i]);
+                break;
+              }
+            }
+          }
+          if (close == null) continue;
+          // (close - entry) × qty — Alpaca's qty is negative for shorts so
+          // the sign comes out right naturally (short profits when price falls).
+          total += (close - p.avgEntryPrice) * p.qty;
+        }
+        return +total.toFixed(2);
+      });
+
+      res.json({
+        timestamp: dates.map((d) => Math.floor(new Date(d).getTime() / 1000)),
+        pnl,
+        // *100 so frontend's "{pct}%" displays correctly (e.g. 0.01 → "1.00%").
+        pct: pnl.map((v) => (baseline > 0 ? +((v / baseline) * 100).toFixed(4) : 0)),
+        base_value: +baseline.toFixed(2),
+      });
     } catch (error: any) {
-      console.error(
-        'Error fetching positions PnL history:',
-        error?.response?.data ?? error?.message,
-      );
-      res
-        .status(500)
-        .json({ error: 'Failed to fetch positions P&L history' });
+      console.error('Error fetching positions PnL history:', error?.response?.data ?? error?.message);
+      res.status(500).json({ error: 'Failed to fetch positions P&L history' });
     }
   };
