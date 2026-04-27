@@ -8,7 +8,7 @@ import createAuthRouter from './auth/auth-router';
 import createRatingsRouter from './ratings/ratings-router';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
-import dashboardRouter from './dashboard/dash-router';
+import { createDashboardRouter } from './dashboard/dash-router';
 import { createRvRouter } from './rv-trade/rv-router';
 
 const app = express();
@@ -58,7 +58,7 @@ const startServer = async () => {
     const authRouter = await createAuthRouter(db);
     app.use('/api/', authRouter);
 
-    app.use('/api/v4', dashboardRouter);
+    app.use('/api/v4', createDashboardRouter(db));
 
     const rvRouter = createRvRouter(db);
     app.use('/api/v4', rvRouter);

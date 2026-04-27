@@ -1,14 +1,17 @@
 import { Router } from 'express';
+import { Db } from 'mongodb';
 import {
   getDashboardData,
   getPortfolioHistory,
-  getPositionsPnlHistory,
+  makeGetPositionsPnlHistory,
 } from './dash-controller';
 
-const router = Router();
+export const createDashboardRouter = (db: Db): Router => {
+  const router = Router();
+  router.post('/dashboard-data', getDashboardData);
+  router.post('/portfolio-history', getPortfolioHistory);
+  router.post('/positions-pnl-history', makeGetPositionsPnlHistory(db));
+  return router;
+};
 
-router.post('/dashboard-data', getDashboardData);
-router.post('/portfolio-history', getPortfolioHistory);
-router.post('/positions-pnl-history', getPositionsPnlHistory);
-
-export default router;
+export default createDashboardRouter;
