@@ -108,7 +108,7 @@ export function CollapseMenuButton({
           >
             <Link href={href}>
                 <span className="mr-4 ml-2">
-                 {Icon && <Icon className="mr-2" />}
+                 {Icon && <Icon className="mr-2 h-4 w-4" />}
                 </span>
               <p
                 className={cn(

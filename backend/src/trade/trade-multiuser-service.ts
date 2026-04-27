@@ -203,7 +203,7 @@ class TradeService {
     let referencePrice: number | null = null;
     if (qty == null && req.notional != null) {
       referencePrice = await this.getLatestPrice(req.symbol, req.email, req.isLiveTrading);
-      qty = parseFloat((req.notional / referencePrice).toFixed(2));
+      qty = parseFloat((req.notional / referencePrice).toFixed(9));
     }
     if (!qty || qty <= 0) return { ok: false, error: "qty resolved to 0" };
 

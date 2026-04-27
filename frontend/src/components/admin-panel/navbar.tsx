@@ -1,21 +1,40 @@
+"use client";
+
 import { ModeToggle } from "@/components/mode-toggle";
 import { UserNav } from "@/components/admin-panel/user-nav";
 import { SheetMenu } from "@/components/admin-panel/sheet-menu";
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { SignedOut } from "@clerk/nextjs";
+import { useEffect, useState } from "react";
 
 interface NavbarProps {
   title: string;
+  hideTitleOnScroll?: boolean;
 }
 
-export function Navbar({ title }: NavbarProps) {
+export function Navbar({ title, hideTitleOnScroll }: NavbarProps) {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    if (!hideTitleOnScroll) return;
+
+    const updateScrolled = () => setIsScrolled(window.scrollY > 8);
+
+    updateScrolled();
+    window.addEventListener("scroll", updateScrolled, { passive: true });
+
+    return () => window.removeEventListener("scroll", updateScrolled);
+  }, [hideTitleOnScroll]);
+
   return (
     <header className="sticky top-0 z-10 w-full bg-background/95 shadow backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:shadow-secondary">
       <div className="mx-4 sm:mx-8 flex h-14 items-center">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <SheetMenu />
-          <h1 className="font-bold">{title}</h1>
+          <h1 className={`translate-y-0.5 font-bold transition-opacity ${hideTitleOnScroll && isScrolled ? "opacity-0" : "opacity-100"}`}>
+            {title}
+          </h1>
         </div>
         <div className="flex flex-1 items-center space-x-2 justify-end">
           <ModeToggle />

@@ -12,6 +12,11 @@ describe("placeOrder bracket payload", () => {
   // stub price
   (svc as any).getLatestPrice = async () => 100;
 
+  beforeEach(() => {
+    mockedAxios.post.mockReset();
+    (svc as any).getLatestPrice = async () => 100;
+  });
+
   it("builds bracket with stop and take when both pcts present", async () => {
     mockedAxios.post.mockResolvedValueOnce({ data: { id: "o1", status: "new" } });
     await svc.placeOrder({
@@ -50,5 +55,24 @@ describe("placeOrder bracket payload", () => {
     });
     const [, payload] = mockedAxios.post.mock.calls[0] as [unknown, any, unknown];
     expect(payload.order_class).toBeUndefined();
+  });
+
+  it("keeps sub-cent fractional quantities when resolving notional orders", async () => {
+    (svc as any).getLatestPrice = async () => 267.98;
+    mockedAxios.post.mockResolvedValueOnce({ data: { id: "o3", status: "new" } });
+
+    await svc.placeOrder({
+      email: "u@x.com",
+      symbol: "AAPL",
+      side: "buy",
+      notional: 1,
+      orderType: "market",
+      timeInForce: "day",
+      isLiveTrading: false,
+    });
+
+    const [, payload] = mockedAxios.post.mock.calls[0] as [unknown, any, unknown];
+    expect(payload.qty).toBeGreaterThan(0);
+    expect(payload.qty).toBeCloseTo(1 / 267.98, 9);
   });
 });

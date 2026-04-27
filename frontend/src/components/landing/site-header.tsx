@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Gem } from "lucide-react";
 import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import { motion } from "framer-motion";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
 import { cn } from "@/lib/utils";
@@ -38,7 +38,7 @@ export function SiteHeader() {
         initial={false}
         animate={{
           width: scrolled ? "min(960px, calc(100% - 32px))" : "100%",
-          height: scrolled ? 52 : 64,
+          height: scrolled ? 56 : 64,
           top: scrolled ? 12 : 0,
           borderRadius: scrolled ? 9999 : 0,
         }}
@@ -56,7 +56,7 @@ export function SiteHeader() {
             href="/"
             className="flex items-center transition-opacity duration-300 hover:opacity-85"
           >
-            <Gem className="mr-2 h-5 w-5" />
+            <BrandLogo className="mr-2 h-5 w-5" size={20} />
             <span className="font-bold">Quant Trader AI</span>
           </Link>
 

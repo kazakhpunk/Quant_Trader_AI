@@ -1,26 +1,17 @@
 import {
-  Tag,
-  Users,
-  Settings,
-  Bookmark,
-  SquarePen,
   LayoutGrid,
   LucideIcon,
   Brain,
   CandlestickChart,
   Activity,
+  Landmark,
+  Newspaper,
 } from "lucide-react";
 
 import {
   BarChartIcon,
-  BellIcon,
-  HomeIcon,
   LineChartIcon,
-  Package2Icon,
-  SearchIcon,
-  SendIcon,
   TrendingUpIcon,
-  VariableIcon,
 } from "@/components/admin-panel/icons";
 
 type Submenu = {
@@ -85,12 +76,12 @@ export function getMenuList(pathname: string): Group[] {
           active: pathname.includes("/analysis"),
           icon: Brain,
           submenus: [
-            // {
-            //   href: "/analysis",
-            //   label: "Overview",
-            //   icon: HomeIcon,
-            //   active: pathname === "/analysis"
-            // },
+            {
+              href: "/analysis/ratings",
+              label: "Ratings",
+              icon: BarChartIcon,
+              active: pathname === "/analysis/ratings",
+            },
             {
               href: "/analysis/price",
               label: "Price Changes",
@@ -101,18 +92,18 @@ export function getMenuList(pathname: string): Group[] {
               href: "/analysis/technical",
               label: "Technical Analysis",
               icon: TrendingUpIcon,
-              active: pathname === "/analysis/new",
+              active: pathname === "/analysis/technical",
             },
             {
               href: "/analysis/fundamental",
               label: "Fundamental Analysis",
-              icon: BarChartIcon,
-              active: pathname === "/analysis/new",
+              icon: Landmark,
+              active: pathname === "/analysis/fundamental",
             },
             {
               href: "/analysis/sentiment",
               label: "Sentiment Analysis",
-              icon: SendIcon,
+              icon: Newspaper,
               active: pathname === "/analysis/sentiment",
             },
             // {

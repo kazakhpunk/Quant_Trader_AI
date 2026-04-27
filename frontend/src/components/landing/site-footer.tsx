@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Gem } from "lucide-react";
 import { GitHubLogoIcon, InstagramLogoIcon } from "@radix-ui/react-icons";
+import { BrandLogo } from "@/components/brand-logo";
 
 export function SiteFooter() {
   return (
@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-3">
           <div>
             <Link href="/" className="flex items-center">
-              <Gem className="mr-2 h-5 w-5" />
+              <BrandLogo className="mr-2 h-5 w-5" size={20} />
               <span className="font-bold">Quant Trader AI</span>
             </Link>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Loader } from "@/components/v4/loader";
 import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { PnlChart } from "@/components/v4/dashboard/pnl-chart";
 import { PositionPie } from "@/components/v4/dashboard/position-pie";
 import { closePosition, cancelOrder } from "@/lib/api/orders";
+import { Switch } from "@/components/ui/switch";
 import { X } from "lucide-react";
 import { useConfirm } from "@/components/v4/confirm-dialog";
 
@@ -51,7 +52,8 @@ const getApiUrl = () => {
 };
 
 const fetchDashboardData = async (
-  token: string
+  token: string,
+  isLiveTrading: boolean
 ): Promise<DashboardData | null> => {
   try {
     const response = await fetch(`${getApiUrl()}/api/v4/dashboard-data`, {
@@ -60,7 +62,7 @@ const fetchDashboardData = async (
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ isLive: false }),
+      body: JSON.stringify({ isLive: isLiveTrading }),
     });
     if (!response.ok) throw new Error("Failed to fetch dashboard data");
     const data = await response.json();
@@ -70,6 +72,8 @@ const fetchDashboardData = async (
     return null;
   }
 };
+
+const TRADING_MODE_KEY = "qt_isLiveTrading";
 
 const safeNumber = (value: unknown): number => {
   const n = typeof value === "number" ? value : Number(value);
@@ -101,27 +105,32 @@ const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [isLiveTrading, setIsLiveTrading] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(TRADING_MODE_KEY) === "1";
+  });
   const { isSignedIn, user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const token = localStorage.getItem("alpaca_access_token");
     if (!token) {
       setData(null);
       return;
     }
-    const dashboardData = await fetchDashboardData(token);
+    const dashboardData = await fetchDashboardData(token, isLiveTrading);
     setData(dashboardData);
-  };
+  }, [isLiveTrading]);
 
   useEffect(() => {
+    localStorage.setItem(TRADING_MODE_KEY, isLiveTrading ? "1" : "0");
     const loadData = async () => {
       setLoading(true);
       await refresh();
       setLoading(false);
     };
     loadData();
-  }, []);
+  }, [isLiveTrading, refresh]);
 
   const { confirm, dialog: confirmDialog, close: closeConfirm } = useConfirm();
 
@@ -158,7 +167,7 @@ const Dashboard = () => {
     setBusyId(`pos:${symbol}`);
     // Optimistic: drop the row immediately so the UI feels responsive
     removePositionLocally(symbol);
-    const r = await closePosition(email, false, symbol);
+    const r = await closePosition(email, isLiveTrading, symbol);
     setBusyId(null);
     closeConfirm();
     if (!r.ok) {
@@ -186,7 +195,7 @@ const Dashboard = () => {
     if (!ok) return;
     setBusyId(`ord:${orderId}`);
     removeOrderLocally(orderId);
-    const r = await cancelOrder(email, false, orderId);
+    const r = await cancelOrder(email, isLiveTrading, orderId);
     setBusyId(null);
     closeConfirm();
     if (!r.ok) {
@@ -212,18 +221,26 @@ const Dashboard = () => {
 
   if (!data || !isSignedIn) {
     return (
-      <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <h2 className="text-2xl font-semibold tracking-tight">No data yet</h2>
-        <p className="mt-3 text-muted-foreground">
-          Place your first trade to populate the dashboard.
-        </p>
-        <div className="mt-6">
-          <Link
-            href="/trade"
-            className="inline-flex items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            Go to Trade →
-          </Link>
+      <div className="mx-auto w-full max-w-7xl space-y-8 px-2 py-6 md:px-4 md:py-10">
+        {isSignedIn && (
+          <DashboardModeSwitch
+            isLiveTrading={isLiveTrading}
+            onChange={setIsLiveTrading}
+          />
+        )}
+        <div className="mx-auto max-w-md px-4 py-16 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight">No data yet</h2>
+          <p className="mt-3 text-muted-foreground">
+            Place your first {isLiveTrading ? "live" : "paper"} trade to populate the dashboard.
+          </p>
+          <div className="mt-6">
+            <Link
+              href="/trade"
+              className="inline-flex items-center text-sm font-medium text-foreground underline-offset-4 hover:underline"
+            >
+              Go to Trade →
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -249,6 +266,11 @@ const Dashboard = () => {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-12 px-2 py-6 md:px-4 md:py-10">
+      <DashboardModeSwitch
+        isLiveTrading={isLiveTrading}
+        onChange={setIsLiveTrading}
+      />
+
       {/* KPI strip */}
       <section>
         <div className="grid grid-cols-2 overflow-hidden rounded-lg border border-border/60 md:grid-cols-4">
@@ -280,7 +302,7 @@ const Dashboard = () => {
       {/* P&L over time + Position distribution */}
       <section className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <PnlChart />
+          <PnlChart isLiveTrading={isLiveTrading} />
         </div>
         <div className="overflow-hidden rounded-lg border border-border/60 lg:col-span-2">
           <div className="border-b border-border/60 bg-muted/20 px-5 py-4">
@@ -490,6 +512,60 @@ const Dashboard = () => {
     </div>
   );
 };
+
+function DashboardModeSwitch({
+  isLiveTrading,
+  onChange,
+}: {
+  isLiveTrading: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <section className="overflow-hidden rounded-xl border border-border/60 bg-background shadow-sm">
+      <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between md:px-6">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+            Brokerage mode
+          </p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">
+            {isLiveTrading ? "Live account" : "Paper account"}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Dashboard, charts, positions, and order actions are scoped to this mode.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 rounded-full border border-border/70 bg-muted/30 p-1.5">
+          <span
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors",
+              !isLiveTrading
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            Paper
+          </span>
+          <Switch
+            checked={isLiveTrading}
+            onCheckedChange={onChange}
+            aria-label="Toggle paper or live dashboard mode"
+            className="data-[state=checked]:bg-rose-600 data-[state=unchecked]:bg-emerald-600"
+          />
+          <span
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors",
+              isLiveTrading
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground",
+            )}
+          >
+            Live
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 function Kpi({
   label,

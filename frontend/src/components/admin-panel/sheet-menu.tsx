@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { MenuIcon, PanelsTopLeft, Gem } from "lucide-react";
+import { MenuIcon } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { Menu } from "@/components/admin-panel/menu";
 import {
@@ -19,16 +20,13 @@ export function SheetMenu() {
       </SheetTrigger>
       <SheetContent className="sm:w-72 px-3 h-full flex flex-col" side="left">
         <SheetHeader>
-          <Button
-            className="flex justify-center items-center pb-2 pt-1"
-            variant="link"
-            asChild
+          <Link
+            href="/dashboard"
+            className="flex items-center justify-center pb-2 pt-1 transition-opacity duration-300 hover:opacity-85"
           >
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <Gem className="w-6 h-6 mr-1" />
-              <h1 className="font-bold text-lg">Quant Trader AI</h1>
-            </Link>
-          </Button>
+            <BrandLogo className="mr-2 h-5 w-5" size={20} />
+            <span className="font-bold">Quant Trader AI</span>
+          </Link>
         </SheetHeader>
         <Menu isOpen />
       </SheetContent>

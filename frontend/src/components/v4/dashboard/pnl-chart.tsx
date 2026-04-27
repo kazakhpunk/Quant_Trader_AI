@@ -47,7 +47,8 @@ const getApiUrl = () =>
 
 async function fetchHistory(
   token: string,
-  period: Period
+  period: Period,
+  isLiveTrading: boolean
 ): Promise<HistoryPayload | null> {
   try {
     // Per-position MTM PnL series — converges to the KPI strip's
@@ -58,7 +59,7 @@ async function fetchHistory(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ period, isLive: false }),
+      body: JSON.stringify({ period, isLive: isLiveTrading }),
     });
     if (!r.ok) return null;
     return await r.json();
@@ -72,7 +73,7 @@ const fmt = {
     new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n),
 };
 
-export function PnlChart() {
+export function PnlChart({ isLiveTrading }: { isLiveTrading: boolean }) {
   const [period, setPeriod] = useState<Period>("1M");
   const [data, setData] = useState<HistoryPayload | null>(null);
   const [loading, setLoading] = useState(true);
@@ -87,13 +88,13 @@ export function PnlChart() {
       setError("No brokerage connected.");
       return;
     }
-    fetchHistory(token, period)
+    fetchHistory(token, period, isLiveTrading)
       .then((d) => {
         if (!d) setError("Failed to load portfolio history.");
         setData(d);
       })
       .finally(() => setLoading(false));
-  }, [period]);
+  }, [period, isLiveTrading]);
 
   const series = useMemo(() => {
     if (!data?.timestamp?.length) return [];

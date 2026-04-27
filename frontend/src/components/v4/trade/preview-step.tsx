@@ -15,6 +15,11 @@ export function PreviewStep({
   onRetry?: () => void;
   loading: boolean;
 }) {
+  const fractionalShortRows = preview.rows.filter(
+    (r) => r.side === "sell" && Math.abs(r.qty - Math.round(r.qty)) > 1e-9,
+  );
+  const blocksFractionalShorts = fractionalShortRows.length > 0;
+
   return (
     <div className="mx-auto w-full max-w-4xl px-4 py-10 md:py-16">
       <p className="text-xs uppercase tracking-widest text-muted-foreground">Preview</p>
@@ -70,10 +75,16 @@ export function PreviewStep({
           Raise the cap in Adjust to deploy more.
         </p>
       )}
+      {blocksFractionalShorts && (
+        <p className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          Short orders require whole shares. Adjust allocation or direction before placing:{" "}
+          {fractionalShortRows.map((r) => `${r.ticker} ${r.qty.toFixed(2)} sh`).join(", ")}.
+        </p>
+      )}
 
       <div className="mt-8 flex gap-3">
         <Button variant="outline" className="flex-1" onClick={onAdjust} disabled={loading}>Adjust</Button>
-        <Button className="flex-1" onClick={onPlace} disabled={loading || preview.rows.length === 0}>
+        <Button className="flex-1" onClick={onPlace} disabled={loading || preview.rows.length === 0 || blocksFractionalShorts}>
           {loading ? "Placing…" : `Place ${preview.rows.length} orders`}
         </Button>
       </div>
