@@ -15,6 +15,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGO_URI = process.env.MONGO_URI || 'your_default_mongo_uri';
 
+// Railway / most PaaS providers terminate TLS at a single proxy hop in front
+// of the app. Without this, express-rate-limit sees the proxy IP for every
+// request and either lumps everyone into one bucket or throws
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR. `1` = trust the first hop only —
+// safer than `true` (which would let any client spoof X-Forwarded-For).
+app.set('trust proxy', 1);
+
 let db: Db;
 
 const limiter = rateLimit({
