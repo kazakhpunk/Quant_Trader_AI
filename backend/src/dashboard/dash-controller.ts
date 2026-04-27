@@ -133,8 +133,10 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
       res.json({
         timestamp: dates.map((d) => Math.floor(new Date(d).getTime() / 1000)),
         pnl,
-        // *100 so frontend's "{pct}%" displays correctly (e.g. 0.01 → "1.00%").
-        pct: pnl.map((v) => (baseline > 0 ? +((v / baseline) * 100).toFixed(4) : 0)),
+        // pct is a fraction (0.0092 = 0.92%). The frontend multiplies by
+        // 100 in pnl-chart.tsx — don't pre-multiply here or the display
+        // shows 100× the real percent (e.g. 1.8% → "180%").
+        pct: pnl.map((v) => (baseline > 0 ? v / baseline : 0)),
         base_value: +baseline.toFixed(2),
       });
     } catch (error: any) {
