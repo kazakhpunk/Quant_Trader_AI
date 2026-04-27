@@ -13,8 +13,9 @@ export const createRvRouter = (db: Db): Router => {
   });
   const ctl = new RvController(store, fred);
 
-  router.get('/rv/universe',     ctl.getUniverse);
-  router.get('/rv/pairs',        ctl.getPairs);
+  router.get('/rv/universe',       ctl.getUniverse);
+  router.get('/rv/universe/stats', ctl.getUniverseStats);
+  router.get('/rv/pairs',          ctl.getPairs);
   router.get('/rv/signals',      ctl.getSignals);
   router.post('/rv/signals/refresh', ctl.getSignals);
   router.post('/rv/backtests',   ctl.postBacktest);

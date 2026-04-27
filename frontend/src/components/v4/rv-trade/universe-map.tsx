@@ -1,6 +1,7 @@
 "use client";
 
-import { AssetDto, AssetCategory } from "@/lib/api/rv";
+import { useEffect, useState } from "react";
+import { AssetDto, AssetCategory, SeriesStatsDto, rvApi } from "@/lib/api/rv";
 import {
   ScatterChart,
   Scatter,
@@ -87,13 +88,42 @@ const CATEGORY_COLORS: Record<AssetCategory, string> = {
 };
 
 export function UniverseMap({ countries }: { countries: AssetDto[] }) {
-  const withStats = countries.filter((c) => c.stats);
-  const withoutStats = countries.length - withStats.length;
+  const [statsByIso, setStatsByIso] = useState<Record<string, SeriesStatsDto | null> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    rvApi
+      .getUniverseStats()
+      .then((r) => { if (alive) setStatsByIso(r.stats); })
+      .catch((e) => { if (alive) setError(e.message); });
+    return () => { alive = false; };
+  }, []);
+
+  if (error) {
+    return (
+      <div className="flex h-[420px] w-full items-center justify-center text-sm text-rose-600">
+        Failed to load series stats: {error}
+      </div>
+    );
+  }
+  if (!statsByIso) {
+    return (
+      <div className="flex h-[420px] w-full items-center justify-center text-sm text-muted-foreground">
+        Computing series stats… (first call after restart can take ~30s)
+      </div>
+    );
+  }
+
+  // Merge fetched stats onto the static countries list.
+  const merged = countries.map((c) => ({ ...c, stats: statsByIso[c.iso] ?? null }));
+  const withStats = merged.filter((c) => c.stats);
+  const withoutStats = merged.length - withStats.length;
 
   if (!withStats.length) {
     return (
       <div className="flex h-[420px] w-full items-center justify-center text-sm text-muted-foreground">
-        No series stats yet — refresh once the cache warms (~30s).
+        No series stats available — check FRED/Yahoo connectivity.
       </div>
     );
   }

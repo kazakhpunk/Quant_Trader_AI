@@ -22,22 +22,25 @@ export class RvController {
   }
 
   getUniverse = async (_req: Request, res: Response) => {
-    // Try to enrich with per-asset summary stats so the UI can plot a
-    // meaningful PCA. Stats use the cached series — if a fetch fails for
-    // any asset (no key, network), we still return that asset with stats
-    // omitted. Cheap when cache is warm; ~10-30s cold.
+    // Return the static list immediately — the page should render in <50ms.
+    // Per-asset stats live on /universe/stats so the slow series-fetch
+    // doesn't block navigation.
+    res.json({ universe: UNIVERSE });
+  };
+
+  getUniverseStats = async (_req: Request, res: Response) => {
     let series: Map<string, { dates: string[]; values: number[] }>;
     try {
       series = await this.fetchSeries();
     } catch {
       series = new Map();
     }
-    const enriched = UNIVERSE.map((a) => {
+    const stats: Record<string, ReturnType<typeof computeSeriesStats>> = {};
+    for (const a of UNIVERSE) {
       const s = series.get(a.iso);
-      if (!s || s.values.length < 30) return { ...a, stats: null };
-      return { ...a, stats: computeSeriesStats(s.values) };
-    });
-    res.json({ universe: enriched });
+      stats[a.iso] = s && s.values.length >= 30 ? computeSeriesStats(s.values) : null;
+    }
+    res.json({ stats });
   };
 
   private async fetchSeries(): Promise<Map<string, { dates: string[]; values: number[] }>> {

@@ -87,6 +87,8 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const rvApi = {
   getUniverse: () => http<{ universe: AssetDto[] }>(`${API_BASE}/api/v4/rv/universe`),
+  getUniverseStats: () =>
+    http<{ stats: Record<string, SeriesStatsDto | null> }>(`${API_BASE}/api/v4/rv/universe/stats`),
   getPairs:    () => http<{ pairs: PairDto[]; config: any }>(`${API_BASE}/api/v4/rv/pairs`),
   getSignals:  () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals`),
   refreshSignals: () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals/refresh`, { method: 'POST' }),
