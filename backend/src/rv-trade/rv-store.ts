@@ -34,9 +34,15 @@ export class RvStore {
     return { _id: _id.toHexString(), ...rest } as BacktestRun;
   }
 
-  async deleteRun(id: string): Promise<boolean> {
+  async deleteRun(id: string, userEmail?: string): Promise<boolean> {
     if (!ObjectId.isValid(id)) return false;
-    const res = await this.db.collection('rv_backtest_runs').deleteOne({ _id: new ObjectId(id) });
+    // Scope by userEmail when we have one — the controller passes 'anonymous'
+    // for unauthenticated callers, which still scopes against any docs that
+    // were saved with that same value. Authoritative protection against one
+    // user deleting another user's saved run.
+    const filter: any = { _id: new ObjectId(id) };
+    if (userEmail) filter.userEmail = userEmail;
+    const res = await this.db.collection('rv_backtest_runs').deleteOne(filter);
     return res.deletedCount === 1;
   }
 

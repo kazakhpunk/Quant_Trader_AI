@@ -87,7 +87,10 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   // Don't send credentials — RV endpoints are public reads, and
   // combining `credentials: 'include'` with the backend's wildcard
   // `Access-Control-Allow-Origin: *` is rejected by the browser.
-  const res = await fetch(url, init);
+  // `cache: "no-store"` defeats the browser's HTTP heuristic-freshness
+  // cache, which was causing list endpoints to serve stale results after
+  // delete/insert (deleted rows reappearing on reload).
+  const res = await fetch(url, { cache: "no-store", ...init });
   if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
   return res.json();
 }

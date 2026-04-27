@@ -151,18 +151,25 @@ export class RvController {
   listBacktests = async (req: Request, res: Response) => {
     const userEmail = (req as any).userEmail || 'anonymous';
     const runs = await this.store.listRuns(userEmail);
+    // Force-fresh on every fetch — without this the browser's heuristic
+    // cache could return a pre-delete snapshot and "deleted" rows
+    // reappear on reload.
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ runs });
   };
 
   getBacktest = async (req: Request, res: Response) => {
     const run = await this.store.getRun(req.params.id);
     if (!run) { res.status(404).json({ error: 'not found' }); return; }
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ run });
   };
 
   deleteBacktest = async (req: Request, res: Response) => {
-    const ok = await this.store.deleteRun(req.params.id);
+    const userEmail = (req as any).userEmail || 'anonymous';
+    const ok = await this.store.deleteRun(req.params.id, userEmail);
     if (!ok) { res.status(404).json({ error: 'not found' }); return; }
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     res.json({ ok: true });
   };
 }
