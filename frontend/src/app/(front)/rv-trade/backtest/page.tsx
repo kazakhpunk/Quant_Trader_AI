@@ -15,7 +15,11 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 const DEFAULT_CONFIG: BacktestConfigDto = {
-  rules: { entryZ: 2.5, exitZ: 0.5, stopZ: 3.5, maxHoldingDays: 90, costBpsRoundTrip: 8, sizing: "equalWeight" },
+  rules: {
+    entryZ: 2.0, exitZ: 0.0, stopZ: 4.0,
+    minHoldingDays: 3, maxHoldingDays: 60,
+    costBpsRoundTrip: 8, sizing: "equalWeight",
+  },
   startDate: "2022-01-01",
   endDate: new Date().toISOString().slice(0, 10),
   notional: 1_000_000,

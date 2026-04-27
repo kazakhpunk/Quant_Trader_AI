@@ -63,6 +63,9 @@ export interface TradingRules {
   entryZ: number;
   exitZ: number;
   stopZ: number;
+  /** Block exit (mean-revert OR stop) until the trade is at least this old.
+   *  Prevents same-day noise stop-outs immediately after entry. */
+  minHoldingDays: number;
   maxHoldingDays: number;
   costBpsRoundTrip: number;
   sizing: 'equalWeight' | 'inverseVol';

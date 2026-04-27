@@ -134,8 +134,12 @@ export function runBacktest(input: BacktestInput): BacktestRun {
       const z = today?.z ?? 0;
       const heldDays = t - pos.entryDayIdx;
       let reason: 'meanRevert' | 'stop' | 'timeout' | null = null;
-      if (Math.abs(z) <= rules.exitZ) reason = 'meanRevert';
-      else if (Math.abs(z) >= rules.stopZ) reason = 'stop';
+      // Min-holding gate: ignore mean-revert and stop in the first N days
+      // so a trade isn't killed by same-day noise right after entry.
+      // Timeout still applies once the holding budget is up.
+      const canExitOnSignal = heldDays >= rules.minHoldingDays;
+      if (canExitOnSignal && Math.abs(z) <= rules.exitZ) reason = 'meanRevert';
+      else if (canExitOnSignal && Math.abs(z) >= rules.stopZ) reason = 'stop';
       else if (heldDays >= rules.maxHoldingDays) reason = 'timeout';
       if (reason) {
         const cost = pos.notional * (rules.costBpsRoundTrip / 2 / 10_000);

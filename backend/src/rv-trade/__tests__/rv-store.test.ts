@@ -38,7 +38,7 @@ describe('RvStore', () => {
       userEmail: 'u@x.com',
       ts: '2026-04-25T10:00:00Z',
       config: {
-        rules: { entryZ: 2, exitZ: 0.5, stopZ: 3.5, maxHoldingDays: 60, costBpsRoundTrip: 30, sizing: 'equalWeight' },
+        rules: { entryZ: 2, exitZ: 0.5, stopZ: 3.5, minHoldingDays: 0, maxHoldingDays: 60, costBpsRoundTrip: 30, sizing: 'equalWeight' },
         startDate: '2024-01-01', endDate: '2024-12-31', notional: 1_000_000, dv01YearsProxy: 7,
       },
       metrics: { totalReturn: 0.1, annReturn: 0.1, annVol: 0.07, sharpe: 1.4, sortino: 1.8,

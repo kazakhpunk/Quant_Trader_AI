@@ -24,7 +24,7 @@ function dates(n: number, start = '2024-01-02'): string[] {
 
 describe('runBacktest', () => {
   const config: BacktestConfig = {
-    rules: { entryZ: 1.5, exitZ: 0.3, stopZ: 4, maxHoldingDays: 30, costBpsRoundTrip: 30, sizing: 'equalWeight' },
+    rules: { entryZ: 1.5, exitZ: 0.3, stopZ: 4, minHoldingDays: 0, maxHoldingDays: 30, costBpsRoundTrip: 30, sizing: 'equalWeight' },
     startDate: '2024-01-02', endDate: '2024-12-31', notional: 1_000_000, dv01YearsProxy: 7,
   };
 

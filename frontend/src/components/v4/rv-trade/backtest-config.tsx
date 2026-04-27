@@ -75,8 +75,9 @@ export function BacktestConfig({ value, onChange, onRun, loading }: BacktestConf
       <section>
         <GroupHeader>Risk &amp; cost</GroupHeader>
         <div className="space-y-4">
+          <SliderRow label="Min holding"      value={r.minHoldingDays}    min={0} max={30}  step={1} unit=" d"  format={(v) => v.toFixed(0)} onChange={(v) => setRule("minHoldingDays", v)} />
           <SliderRow label="Max holding"      value={r.maxHoldingDays}    min={5} max={120} step={5} unit=" d"  format={(v) => v.toFixed(0)} onChange={(v) => setRule("maxHoldingDays", v)} />
-          <SliderRow label="Round-trip cost"  value={r.costBpsRoundTrip}  min={0} max={100} step={5} unit=" bps" format={(v) => v.toFixed(0)} onChange={(v) => setRule("costBpsRoundTrip", v)} />
+          <SliderRow label="Round-trip cost"  value={r.costBpsRoundTrip}  min={0} max={100} step={1} unit=" bps" format={(v) => v.toFixed(0)} onChange={(v) => setRule("costBpsRoundTrip", v)} />
           <div className="flex items-center justify-between rounded-md border border-border/60 bg-muted/20 px-3 py-2">
             <div>
               <div className="text-sm">Sizing</div>

@@ -45,6 +45,7 @@ export interface SignalDto {
 
 export interface TradingRulesDto {
   entryZ: number; exitZ: number; stopZ: number;
+  minHoldingDays: number;
   maxHoldingDays: number; costBpsRoundTrip: number;
   sizing: 'equalWeight' | 'inverseVol';
 }
