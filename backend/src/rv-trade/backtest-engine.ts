@@ -2,6 +2,7 @@ import * as ss from 'simple-statistics';
 import { Country, BacktestConfig, BacktestRun, TradeLogEntry, BacktestMetrics, PairCandidate } from './rv-types';
 import { runPairPipeline, DEFAULT_PIPELINE_CONFIG } from './pair-pipeline';
 import { kalmanHedgeRatio } from './kalman';
+import { cusumPage } from './stats';
 
 export interface BacktestInput {
   universe: Country[];
@@ -95,6 +96,10 @@ export function runBacktest(input: BacktestInput): BacktestRun {
       const window = k.resid.slice(-250);
       const mu = ss.mean(window), sigma = Math.max(ss.standardDeviation(window), 1e-9);
       const z = (k.resid[k.resid.length - 1] - mu) / sigma;
+      // Same CUSUM regime check the live signal-service uses; skip pairs
+      // whose cointegration relationship has likely broken structurally.
+      const cu = cusumPage(k.resid.slice(-100), { k: 0.5, h: 5 });
+      if (cu.broken) continue;
       const oasA = ySlice[ySlice.length - 1], oasB = xSlice[xSlice.length - 1];
       // Position based on residual sign for mean-reversion:
       //   z > 0  → residual y - β·x is too high → expect y to fall vs β·x

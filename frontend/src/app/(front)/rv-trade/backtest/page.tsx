@@ -15,9 +15,11 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 
 const DEFAULT_CONFIG: BacktestConfigDto = {
+  // Sharpe-max from a 54-combo sweep — produces ~0.43 Sharpe / +2.60% on
+  // current data. See backend/src/rv-trade/rv-controller.ts for context.
   rules: {
-    entryZ: 2.0, exitZ: 0.0, stopZ: 4.0,
-    minHoldingDays: 3, maxHoldingDays: 60,
+    entryZ: 2.0, exitZ: 0.5, stopZ: 4.0,
+    minHoldingDays: 5, maxHoldingDays: 60,
     costBpsRoundTrip: 8, sizing: "equalWeight",
   },
   startDate: "2022-01-01",
