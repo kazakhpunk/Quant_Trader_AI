@@ -440,17 +440,17 @@ const Dashboard = () => {
           </span>
         </div>
         <div className="mt-4 overflow-hidden rounded-lg border border-border/60">
-          <table className="w-full table-auto">
+          <table className="w-full table-fixed">
             <thead className="bg-muted/30">
-              <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-                <th className="px-4 py-3 font-medium">Symbol</th>
-                <th className="px-4 py-3 font-medium">Type</th>
-                <th className="px-4 py-3 text-right font-medium">Qty</th>
-                <th className="hidden px-4 py-3 text-right font-medium md:table-cell">
+              <tr className="text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="w-1/6 px-4 py-3 text-left font-medium">Symbol</th>
+                <th className="w-1/6 px-4 py-3 text-center font-medium">Type</th>
+                <th className="w-1/6 px-4 py-3 text-center font-medium">Qty</th>
+                <th className="hidden w-1/6 px-4 py-3 text-center font-medium md:table-cell">
                   Filled
                 </th>
-                <th className="px-4 py-3 text-left font-medium">Status</th>
-                <th className="w-20 px-4 py-3 text-right font-medium"></th>
+                <th className="w-1/6 px-4 py-3 text-center font-medium">Status</th>
+                <th className="w-1/6 px-4 py-3 text-center font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -471,19 +471,19 @@ const Dashboard = () => {
                     onClick={() => openDrawer(o.symbol)}
                   >
                     <td className="px-4 py-3 font-medium">{o.symbol}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-center">
                       <SideBadge side={o.side} />
                     </td>
-                    <td className="px-4 py-3 text-right font-mono tabular-nums">
+                    <td className="px-4 py-3 text-center font-mono tabular-nums">
                       {o.qty}
                     </td>
-                    <td className="hidden px-4 py-3 text-right font-mono tabular-nums md:table-cell">
+                    <td className="hidden px-4 py-3 text-center font-mono tabular-nums md:table-cell">
                       {o.filled_qty}
                     </td>
-                    <td className="px-4 py-3 text-left">
+                    <td className="px-4 py-3 text-center">
                       <StatusBadge status={o.status} />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-center">
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleCancelOrder(o.id, o.symbol); }}
