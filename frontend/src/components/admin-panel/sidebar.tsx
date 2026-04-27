@@ -23,10 +23,7 @@ export function Sidebar() {
       <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto shadow-md dark:shadow-zinc-800">
         <Link
           href="/"
-          className={cn(
-            "my-1 flex items-center transition-[padding] duration-300 hover:opacity-85",
-            sidebar?.isOpen === false ? "justify-center" : "ml-3"
-          )}
+          className="my-1 flex items-center justify-center transition-opacity duration-300 hover:opacity-85"
         >
           <BrandLogo
             className={cn("h-5 w-5", sidebar?.isOpen === false ? "" : "mr-2")}
