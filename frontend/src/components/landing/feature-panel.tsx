@@ -24,24 +24,40 @@ export type FeaturePanelData = {
 export function FeaturePanel({
   data,
   variant = "horizontal",
+  active = true,
 }: {
   data: FeaturePanelData;
   variant?: "horizontal" | "stacked";
+  active?: boolean;
 }) {
   const padded = data.index.toString().padStart(2, "0");
   const totalPadded = data.total.toString().padStart(2, "0");
+  const isHorizontal = variant === "horizontal";
+  const isRevealed = !isHorizontal || active;
 
   return (
     <section
       className={cn(
-        "flex w-full items-center justify-center",
+        "flex items-center justify-center",
         variant === "horizontal"
-          ? "h-full shrink-0 px-6 md:px-12 lg:px-24"
-          : "min-h-[80vh] px-6 py-20 md:px-12",
+          // Each panel must be exactly one viewport wide so the track's
+          // translate3d(-Nvw) lines up with the next panel. `w-full` was
+          // resolving to the parent track's 500vw width, which kept Panel
+          // 1 visible no matter how far we translated.
+          ? "h-full w-screen shrink-0 px-6 md:px-12 lg:px-24"
+          : "min-h-[80vh] w-full px-6 py-20 md:px-12",
       )}
     >
       <div className="grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="relative">
+        <div
+          className={cn(
+            "relative transition-all duration-700 ease-out motion-reduce:translate-y-0 motion-reduce:scale-100 motion-reduce:opacity-100 motion-reduce:transition-none",
+            isHorizontal &&
+              (isRevealed
+                ? "translate-y-0 scale-100 opacity-100"
+                : "translate-y-8 scale-[0.985] opacity-0"),
+          )}
+        >
           <div className="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-[60%] w-[80%] rounded-full bg-primary/15 blur-3xl" />
           <div className="relative overflow-hidden rounded-xl border border-border/60 shadow-2xl">
             {data.imageSrc ? (
@@ -69,7 +85,15 @@ export function FeaturePanel({
           </div>
         </div>
 
-        <div>
+        <div
+          className={cn(
+            "transition-all duration-700 ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
+            isHorizontal &&
+              (isRevealed
+                ? "translate-y-0 opacity-100 delay-100"
+                : "translate-y-6 opacity-0 delay-0"),
+          )}
+        >
           <p className="font-mono text-xs text-muted-foreground">
             {padded} / {totalPadded}
           </p>
@@ -79,8 +103,21 @@ export function FeaturePanel({
           <p className="mt-4 text-lg text-muted-foreground">{data.lede}</p>
 
           <ul className="mt-8 space-y-4">
-            {data.callouts.map((c) => (
-              <li key={c.label} className="flex items-start gap-3">
+            {data.callouts.map((c, i) => (
+              <li
+                key={c.label}
+                className={cn(
+                  "flex items-start gap-3 transition-all duration-500 ease-out motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none",
+                  isHorizontal &&
+                    (isRevealed
+                      ? "translate-y-0 opacity-100"
+                      : "translate-y-3 opacity-0"),
+                )}
+                style={{
+                  transitionDelay:
+                    isHorizontal && isRevealed ? `${220 + i * 70}ms` : "0ms",
+                }}
+              >
                 <span className="rounded-md bg-primary/10 p-2">
                   <c.icon className="h-4 w-4 text-primary" />
                 </span>

@@ -22,7 +22,7 @@ import { FeaturePanel, type FeaturePanelData } from "./feature-panel";
 const PANELS: FeaturePanelData[] = [
   {
     index: 1,
-    total: 4,
+    total: 5,
     title: "Technical Analysis",
     lede: "Indicator-driven signals across multiple timeframes.",
     imageSrc: "/mac-light.png",
@@ -36,9 +36,10 @@ const PANELS: FeaturePanelData[] = [
   },
   {
     index: 2,
-    total: 4,
+    total: 5,
     title: "Fundamental Analysis",
     lede: "Earnings, ratios, and financials parsed automatically.",
+    imageSrc: "/landing-fundamental-analysis.png",
     imageAlt: "Fundamental analysis dashboard",
     callouts: [
       { icon: PieChartIcon, label: "P/E, P/B, ROIC scoring", detail: "Standard valuation ratios computed across the universe." },
@@ -48,9 +49,10 @@ const PANELS: FeaturePanelData[] = [
   },
   {
     index: 3,
-    total: 4,
+    total: 5,
     title: "Sentiment Analysis",
     lede: "News and social sentiment measured in real-time.",
+    imageSrc: "/landing-sentiment-analysis.png",
     imageAlt: "Sentiment analysis dashboard",
     callouts: [
       { icon: Sparkles, label: "NLP-driven sentiment scoring", detail: "Article and post text classified for tone and stance." },
@@ -60,9 +62,23 @@ const PANELS: FeaturePanelData[] = [
   },
   {
     index: 4,
-    total: 4,
+    total: 5,
+    title: "Relative-Value Trading",
+    lede: "Credit-market watchlists, pairs, and signals in one workflow.",
+    imageSrc: "/landing-rv-universe.png",
+    imageAlt: "Relative value trading universe dashboard",
+    callouts: [
+      { icon: Layers, label: "22 EM credit buckets", detail: "FRED OAS series and tradable ETFs organized for pair discovery." },
+      { icon: Activity, label: "Behavior maps", detail: "PCA and series statistics reveal clusters, outliers, and dislocations." },
+      { icon: GaugeIcon, label: "Cointegration-ready universe", detail: "Same-category pairs feed the signal and backtest pipeline." },
+    ],
+  },
+  {
+    index: 5,
+    total: 5,
     title: "Paper / Live Trading",
     lede: "Practice risk-free, then go live with one click.",
+    imageSrc: "/landing-backtest-result.png",
     imageAlt: "Paper and live trading dashboard",
     callouts: [
       { icon: AlarmClockIcon, label: "Paper trading sandbox", detail: "Test strategies with simulated fills before risking capital." },
@@ -102,7 +118,7 @@ export function FeatureCarousel() {
         <Reveal>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">Features</p>
           <h2 className="mt-3 max-w-3xl text-4xl font-semibold tracking-tight md:text-5xl">
-            Four lenses. One signal.
+            Five lenses. One signal.
           </h2>
         </Reveal>
       </div>
@@ -123,6 +139,40 @@ function HorizontalTrack() {
 
     let raf = 0;
     let pending = false;
+    let snapTimer = 0;
+    let snapping = false;
+    let snapRaf = 0;
+    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Custom rAF tween — gives a soft ease-in-out across the full motion.
+    // Native `behavior: 'smooth'` on most browsers eases out only, which
+    // reads as "paused, then snatched". This keeps acceleration symmetrical
+    // and scales duration with distance so tiny corrections don't drag and
+    // big jumps don't feel rushed.
+    const easeInOutCubic = (t: number) =>
+      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    const tweenScrollTo = (targetY: number) => {
+      cancelAnimationFrame(snapRaf);
+      const startY = window.scrollY;
+      const dist = targetY - startY;
+      if (Math.abs(dist) < 1) return;
+      const duration = Math.min(900, Math.max(420, 360 + Math.abs(dist) * 0.55));
+      const t0 = performance.now();
+      const step = (now: number) => {
+        if (!snapping) return; // cancelled by user gesture
+        const t = Math.min(1, (now - t0) / duration);
+        const eased = easeInOutCubic(t);
+        window.scrollTo(0, startY + dist * eased);
+        if (t < 1) {
+          snapRaf = requestAnimationFrame(step);
+        } else {
+          snapping = false;
+        }
+      };
+      snapping = true;
+      snapRaf = requestAnimationFrame(step);
+    };
 
     const update = () => {
       const rect = outer.getBoundingClientRect();
@@ -143,6 +193,34 @@ function HorizontalTrack() {
       setActive((prev) => (prev === next ? prev : next));
     };
 
+    // After the user stops scrolling, gently nudge the page scroll so the
+    // nearest panel ends up centered. Behaves like CSS scroll-snap with
+    // proximity but works for our scroll-linked transform.
+    const scheduleSnap = () => {
+      if (prefersReduced) return;
+      window.clearTimeout(snapTimer);
+      snapTimer = window.setTimeout(() => {
+        const rect = outer.getBoundingClientRect();
+        // Only snap while the section is actually pinned. Outside this band
+        // the user is entering or leaving the carousel — don't hijack them.
+        const PIN_TOL = 8;
+        if (rect.top > -PIN_TOL || rect.bottom < window.innerHeight + PIN_TOL) return;
+
+        const totalScroll = Math.max(1, rect.height - window.innerHeight);
+        const scrolled = -rect.top;
+        const progress = Math.max(0, Math.min(1, scrolled / totalScroll));
+        const stops = PANEL_COUNT - 1;
+        const targetIdx = Math.round(progress * stops);
+        const targetProgress = targetIdx / stops;
+        const targetScrolled = targetProgress * totalScroll;
+        const delta = targetScrolled - scrolled;
+
+        // Already on the snap point — nothing to do.
+        if (Math.abs(delta) < 2) return;
+        tweenScrollTo(window.scrollY + delta);
+      }, 110);
+    };
+
     const onScroll = () => {
       if (pending) return;
       pending = true;
@@ -150,15 +228,32 @@ function HorizontalTrack() {
         update();
         pending = false;
       });
+      if (!snapping) scheduleSnap();
+    };
+
+    // Any deliberate input from the user cancels an in-flight snap so we
+    // never fight against an active gesture.
+    const cancelSnap = () => {
+      window.clearTimeout(snapTimer);
+      cancelAnimationFrame(snapRaf);
+      snapping = false;
     };
 
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("wheel", cancelSnap, { passive: true });
+    window.addEventListener("touchstart", cancelSnap, { passive: true });
+    window.addEventListener("keydown", cancelSnap);
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", cancelSnap);
+      window.removeEventListener("touchstart", cancelSnap);
+      window.removeEventListener("keydown", cancelSnap);
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(snapRaf);
+      window.clearTimeout(snapTimer);
     };
   }, []);
 
@@ -176,7 +271,7 @@ function HorizontalTrack() {
             Features
           </p>
           <h2 className="mt-2 max-w-3xl text-3xl font-semibold tracking-tight md:text-4xl">
-            Four lenses.{" "}
+            Five lenses.{" "}
             <span className="text-muted-foreground">One signal.</span>
           </h2>
         </header>
@@ -187,8 +282,13 @@ function HorizontalTrack() {
             className="flex h-full will-change-transform"
             style={{ width: `${PANEL_COUNT * 100}vw` }}
           >
-            {PANELS.map((p) => (
-              <FeaturePanel key={p.index} data={p} variant="horizontal" />
+            {PANELS.map((p, i) => (
+              <FeaturePanel
+                key={p.index}
+                data={p}
+                variant="horizontal"
+                active={i === active}
+              />
             ))}
           </div>
         </div>
