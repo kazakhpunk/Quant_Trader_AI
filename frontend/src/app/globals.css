@@ -71,3 +71,17 @@
 html {
   scroll-padding-top: 80px;
 }
+
+@keyframes ratings-row-pulse {
+  0%   { background-color: hsl(var(--primary) / 0);    box-shadow: inset 3px 0 0 hsl(var(--primary) / 0); }
+  15%  { background-color: hsl(var(--primary) / 0.18); box-shadow: inset 3px 0 0 hsl(var(--primary) / 0.9); }
+  100% { background-color: hsl(var(--primary) / 0);    box-shadow: inset 3px 0 0 hsl(var(--primary) / 0); }
+}
+.ratings-row-pulse { animation: ratings-row-pulse 1.6s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .ratings-row-pulse {
+    animation: none;
+    outline: 2px solid hsl(var(--primary) / 0.5);
+    outline-offset: -2px;
+  }
+}

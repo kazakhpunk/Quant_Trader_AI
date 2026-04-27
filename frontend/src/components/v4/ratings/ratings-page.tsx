@@ -7,6 +7,7 @@ import { DimensionTable } from "./dimension-table";
 import { StickySubnav } from "./sticky-subnav";
 import { MethodologyDialog } from "./methodology-dialog";
 import { DirectionToggle } from "./direction-toggle";
+import { TickerSearch } from "./ticker-search";
 import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 import { useStore } from "@/hooks/use-store";
 import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
@@ -76,7 +77,8 @@ export function RatingsPage() {
       <StickySubnav
         left={<DirectionToggle value={direction} onChange={setDirection} />}
         right={
-          <div className={cn(sidebarOpen && "lg:mr-24")}>
+          <div className={cn("flex items-center gap-2", sidebarOpen && "lg:mr-24")}>
+            <TickerSearch rows={projected} />
             <MethodologyDialog />
           </div>
         }

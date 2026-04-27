@@ -3,6 +3,7 @@ import { useState } from "react";
 import { RatingRow, Dimension } from "@/lib/api/ratings";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
+import { useRatingsHighlight } from "./use-ratings-highlight";
 
 type Col<T> = { key: string; label: string; get: (r: RatingRow) => T; format?: (v: T) => string };
 
@@ -44,6 +45,7 @@ export const DIMENSION_COLUMNS: Record<Dimension, Col<any>[]> = {
 
 export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows: RatingRow[] }) {
   const open = useOrderDrawer((s) => s.open);
+  const pulseTicker = useRatingsHighlight(dimension);
   const [sort, setSort] = useState<{ k: string; dir: "asc" | "desc" }>({
     k: "score", dir: "desc",
   });
@@ -73,7 +75,7 @@ export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows
   );
 
   return (
-    <section id={dimension} className="space-y-4">
+    <section id={dimension} className="scroll-mt-20 space-y-4">
       <div className="flex items-baseline justify-between">
         <h2 className="text-lg font-semibold capitalize tracking-tight">{dimension}</h2>
       </div>
@@ -89,8 +91,15 @@ export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows
           </thead>
           <tbody className="divide-y divide-border/60">
             {sorted.map((r) => (
-              <tr key={r.ticker} className="cursor-pointer transition-colors hover:bg-muted/30"
-                onClick={() => open(r.ticker)}>
+              <tr
+                key={r.ticker}
+                id={`row-${dimension}-${r.ticker}`}
+                className={cn(
+                  "cursor-pointer transition-colors hover:bg-muted/30",
+                  pulseTicker === r.ticker && "ratings-row-pulse",
+                )}
+                onClick={() => open(r.ticker)}
+              >
                 <td className="px-4 py-3 font-medium">{r.ticker}</td>
                 <td className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.scores[dimension]))}>
                   {Math.round(r.scores[dimension])}

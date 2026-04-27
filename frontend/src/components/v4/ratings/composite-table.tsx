@@ -5,6 +5,7 @@ import { RatingRow, VISIBLE_DIMENSIONS, COMPOSITE_DIMENSIONS, Dimension, Directi
 const COMPOSITE_SET = new Set<Dimension>(COMPOSITE_DIMENSIONS);
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
+import { useRatingsHighlight } from "./use-ratings-highlight";
 
 const scoreClass = (n: number) =>
   n >= 75 ? "text-emerald-600" : n >= 50 ? "text-amber-600" : "text-rose-600";
@@ -22,6 +23,7 @@ export function CompositeTable({
     direction === "short" ? r.compositeLong : r.compositeShort;
   const oppositeLabel = direction === "short" ? "L" : "S";
   const open = useOrderDrawer((s) => s.open);
+  const pulseTicker = useRatingsHighlight("composite");
   const [sort, setSort] = useState<{ k: SortKey; dir: "asc" | "desc" }>({
     k: "composite", dir: "desc",
   });
@@ -67,9 +69,15 @@ export function CompositeTable({
         </thead>
         <tbody className="divide-y divide-border/60">
           {sorted.map((r) => (
-            <tr key={r.ticker}
-              className="cursor-pointer transition-colors hover:bg-muted/30"
-              onClick={() => open(r.ticker)}>
+            <tr
+              key={r.ticker}
+              id={`row-composite-${r.ticker}`}
+              className={cn(
+                "cursor-pointer transition-colors hover:bg-muted/30",
+                pulseTicker === r.ticker && "ratings-row-pulse",
+              )}
+              onClick={() => open(r.ticker)}
+            >
               <td className="px-4 py-3 font-medium">{r.ticker}</td>
               <td className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.composite))}>
                 <div className="flex items-center justify-end gap-2">
