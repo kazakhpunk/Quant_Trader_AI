@@ -85,7 +85,7 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
       const positionData = await Promise.all(
         positions.map(async (p) => {
           try {
-            const bars = await getCachedDailyBars(db, p.symbol, startDate, endDate);
+            const bars = await getCachedDailyBars(db, p.symbol, startDate, endDate, token);
             return { ...p, bars };
           } catch {
             return { ...p, bars: [] as { date: string; close: number }[] };

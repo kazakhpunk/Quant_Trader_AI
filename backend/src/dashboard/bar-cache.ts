@@ -1,4 +1,5 @@
 import { Db } from 'mongodb';
+import axios from 'axios';
 import { getHistoricalBars } from '../analysis/yahoo-client';
 
 /** Incremental Mongo cache of daily close prices per symbol.
@@ -64,6 +65,68 @@ async function fetchYahooSlice(
     .filter((b) => Number.isFinite(b.close));
 }
 
+/** Alpaca's market-data API. Works from any IP (unlike Yahoo, which Railway
+ *  egress IPs frequently get blocked / rate-limited from), and uses the
+ *  user's existing OAuth token (`data` scope). Free tier returns IEX feed,
+ *  which is fine for daily closes. */
+async function fetchAlpacaSlice(
+  token: string,
+  symbol: string,
+  startDate: string,
+  endDate: string
+): Promise<{ date: string; close: number }[]> {
+  const out: { date: string; close: number }[] = [];
+  let pageToken: string | undefined;
+  do {
+    const r: any = await axios.get(
+      `https://data.alpaca.markets/v2/stocks/${encodeURIComponent(symbol)}/bars`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          timeframe: '1Day',
+          start: `${startDate}T00:00:00Z`,
+          end: `${endDate}T23:59:59Z`,
+          limit: 10000,
+          adjustment: 'all',
+          feed: 'iex',
+          ...(pageToken ? { page_token: pageToken } : {}),
+        },
+      },
+    );
+    const bars = r.data?.bars || [];
+    for (const b of bars) {
+      const close = Number(b.c);
+      if (!Number.isFinite(close)) continue;
+      out.push({ date: isoDay(b.t), close });
+    }
+    pageToken = r.data?.next_page_token;
+  } while (pageToken);
+  return out;
+}
+
+/** Try Alpaca first (reliable from Railway), fall back to Yahoo (works
+ *  locally) only if Alpaca refuses or no token is available. */
+async function fetchBarsSlice(
+  symbol: string,
+  startDate: string,
+  endDate: string,
+  token?: string,
+): Promise<{ date: string; close: number }[]> {
+  if (token) {
+    try {
+      const bars = await fetchAlpacaSlice(token, symbol, startDate, endDate);
+      if (bars.length) return bars;
+    } catch (e: any) {
+      console.warn(
+        `[bar-cache] alpaca slice failed for ${symbol}:`,
+        e?.response?.status,
+        e?.response?.data?.message ?? e?.message,
+      );
+    }
+  }
+  return fetchYahooSlice(symbol, startDate, endDate);
+}
+
 function mergeBars(
   existing: { date: string; close: number }[],
   incoming: { date: string; close: number }[]
@@ -81,7 +144,8 @@ export async function getCachedDailyBars(
   db: Db,
   symbol: string,
   startDate: string,
-  endDate: string
+  endDate: string,
+  token?: string,
 ): Promise<{ date: string; close: number }[]> {
   const col = db.collection(COLLECTION);
   const cached = (await col.findOne({ _id: symbol as any })) as CachedDoc | null;
@@ -101,7 +165,7 @@ export async function getCachedDailyBars(
     // chart looked identical across selections.
     if (headMissing) {
       try {
-        const slice = await fetchYahooSlice(symbol, startDate, cached.earliestDate);
+        const slice = await fetchBarsSlice(symbol, startDate, cached.earliestDate, token);
         if (slice.length) {
           merged = mergeBars(slice, merged);
           didBackfill = true;
@@ -116,7 +180,7 @@ export async function getCachedDailyBars(
         // any provisional value from a prior intraday hit
         const tailStart = cached.latestDate;
         const tailEnd = endDate > today ? today : endDate;
-        const slice = await fetchYahooSlice(symbol, tailStart, tailEnd);
+        const slice = await fetchBarsSlice(symbol, tailStart, tailEnd, token);
         if (slice.length) {
           merged = mergeBars(merged, slice);
           didBackfill = true;
@@ -151,7 +215,7 @@ export async function getCachedDailyBars(
   // controller's catch (which would zero the symbol out).
   let bars: { date: string; close: number }[] = [];
   try {
-    bars = await fetchYahooSlice(symbol, startDate, endDate);
+    bars = await fetchBarsSlice(symbol, startDate, endDate, token);
   } catch (e) {
     console.warn(`[bar-cache] cold fetch failed for ${symbol}:`, (e as Error).message);
   }
