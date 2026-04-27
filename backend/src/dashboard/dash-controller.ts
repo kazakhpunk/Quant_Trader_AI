@@ -58,6 +58,9 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
     const isLive = !!req.body.isLive;
     const period = (req.body.period as string) || '1M';
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
+    // Tell every cache layer (browser, CDN, Vercel edge) not to reuse this
+    // response across period changes — the body is per-request anyway.
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 
     try {
       const positionsRaw = await fetchPositions(token, isLive);

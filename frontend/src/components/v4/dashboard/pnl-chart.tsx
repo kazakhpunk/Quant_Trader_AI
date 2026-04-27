@@ -55,9 +55,11 @@ async function fetchHistory(
     // unrealized P&L number on the rightmost bar.
     const r = await fetch(`${getApiUrl()}/api/v4/positions-pnl-history`, {
       method: "POST",
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
+        "Cache-Control": "no-cache",
       },
       body: JSON.stringify({ period, isLive: isLiveTrading }),
     });

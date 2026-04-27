@@ -92,21 +92,41 @@ export async function getCachedDailyBars(
     const tailMissing = cached.latestDate < endDate; // also re-fetches today
 
     let merged = cached.bars;
+    let didBackfill = false;
 
+    // Critical: each backfill is wrapped individually. If Yahoo throws (rate
+    // limit, region block from Railway IPs, transient network), we keep what
+    // we have rather than blowing up the whole request — that was masking
+    // the period selector by collapsing every period to "no data" and the
+    // chart looked identical across selections.
     if (headMissing) {
-      const slice = await fetchYahooSlice(symbol, startDate, cached.earliestDate);
-      merged = mergeBars(slice, merged);
+      try {
+        const slice = await fetchYahooSlice(symbol, startDate, cached.earliestDate);
+        if (slice.length) {
+          merged = mergeBars(slice, merged);
+          didBackfill = true;
+        }
+      } catch (e) {
+        console.warn(`[bar-cache] head backfill failed for ${symbol}:`, (e as Error).message);
+      }
     }
     if (tailMissing) {
-      // start one day before latestDate so today's bar (if newer) overwrites
-      // any provisional value from a prior intraday hit
-      const tailStart = cached.latestDate;
-      const tailEnd = endDate > today ? today : endDate;
-      const slice = await fetchYahooSlice(symbol, tailStart, tailEnd);
-      merged = mergeBars(merged, slice);
+      try {
+        // start one day before latestDate so today's bar (if newer) overwrites
+        // any provisional value from a prior intraday hit
+        const tailStart = cached.latestDate;
+        const tailEnd = endDate > today ? today : endDate;
+        const slice = await fetchYahooSlice(symbol, tailStart, tailEnd);
+        if (slice.length) {
+          merged = mergeBars(merged, slice);
+          didBackfill = true;
+        }
+      } catch (e) {
+        console.warn(`[bar-cache] tail backfill failed for ${symbol}:`, (e as Error).message);
+      }
     }
 
-    if (headMissing || tailMissing) {
+    if (didBackfill) {
       const earliest = merged[0].date;
       const latest = merged[merged.length - 1].date;
       await col.updateOne(
@@ -127,8 +147,14 @@ export async function getCachedDailyBars(
     return merged.filter((b) => inWindow(b.date, startDate, endDate));
   }
 
-  // No cache: full fetch.
-  const bars = await fetchYahooSlice(symbol, startDate, endDate);
+  // No cache: full fetch. Wrap so a Yahoo failure doesn't cascade into the
+  // controller's catch (which would zero the symbol out).
+  let bars: { date: string; close: number }[] = [];
+  try {
+    bars = await fetchYahooSlice(symbol, startDate, endDate);
+  } catch (e) {
+    console.warn(`[bar-cache] cold fetch failed for ${symbol}:`, (e as Error).message);
+  }
   if (bars.length) {
     await col.updateOne(
       { _id: symbol as any },
