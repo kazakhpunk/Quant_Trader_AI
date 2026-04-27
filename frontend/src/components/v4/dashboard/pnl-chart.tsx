@@ -30,7 +30,7 @@ const PERIOD_LABEL: Record<Period, string> = {
 };
 
 const chartConfig = {
-  pnl: { label: "Unrealized P&L", color: "hsl(var(--chart-1))" },
+  pnl: { label: "Equity Δ", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 interface HistoryPayload {
@@ -127,7 +127,7 @@ export function PnlChart() {
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 bg-muted/20 px-5 py-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Unrealized P&amp;L{baseDate ? ` · since ${baseDate}` : ""}
+            Account equity Δ{baseDate ? ` · since ${baseDate}` : ""}
           </p>
           <div className="mt-1 flex items-baseline gap-3">
             <span
@@ -150,9 +150,13 @@ export function PnlChart() {
               )}
             >
               {periodPct >= 0 ? "+" : ""}
-              {periodPct.toFixed(2)}%
+              {/* Show 4 decimals when |pct| < 0.1 so tiny equity moves aren't lost to rounding. */}
+              {Math.abs(periodPct) < 0.1 ? periodPct.toFixed(4) : periodPct.toFixed(2)}%
             </span>
           </div>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            Total account value change including cash; differs from the KPI&apos;s unrealized P&amp;L (open positions only).
+          </p>
         </div>
         <div className="flex items-center rounded-md border border-border/70 bg-background p-0.5">
           {PERIODS.map((p) => (
@@ -248,7 +252,7 @@ export function PnlChart() {
                             : {}),
                         });
                       }}
-                      formatter={(v) => [fmt.money(Number(v)), " P&L"]}
+                      formatter={(v) => [fmt.money(Number(v)), " Equity Δ"]}
                     />
                   }
                 />
