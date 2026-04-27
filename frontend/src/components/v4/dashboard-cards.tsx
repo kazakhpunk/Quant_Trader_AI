@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { getRatings, RatingRow, VISIBLE_DIMENSIONS } from "@/lib/api/ratings";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PnlChart } from "@/components/v4/dashboard/pnl-chart";
+import { PositionPie } from "@/components/v4/dashboard/position-pie";
 
 interface AccountData {
   portfolio_value: number;
@@ -190,6 +192,26 @@ const Dashboard = () => {
             value={positions.length.toString()}
             sub={`${positions.length === 1 ? "asset" : "assets"} held`}
           />
+        </div>
+      </section>
+
+      {/* P&L over time + Position distribution */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <PnlChart />
+        </div>
+        <div className="overflow-hidden rounded-lg border border-border/60 lg:col-span-2">
+          <div className="border-b border-border/60 bg-muted/20 px-5 py-4">
+            <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+              Position mix
+            </p>
+            <h3 className="mt-1 text-base font-semibold tracking-tight">
+              Where the capital is.
+            </h3>
+          </div>
+          <div className="p-5">
+            <PositionPie positions={positions.map((p) => ({ symbol: p.symbol, market_value: safeNumber(p.market_value) }))} />
+          </div>
         </div>
       </section>
 
