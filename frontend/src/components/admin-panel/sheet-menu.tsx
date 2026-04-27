@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MenuIcon, PanelsTopLeft, Gem } from "lucide-react";
+import { MenuIcon, PanelsTopLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Menu } from "@/components/admin-panel/menu";
 import {
@@ -25,7 +25,14 @@ export function SheetMenu() {
             asChild
           >
             <Link href="/dashboard" className="flex items-center gap-2">
-              <Gem className="w-6 h-6 mr-1" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/qtrader_ai.ico"
+                alt="Quant Trader AI"
+                width={24}
+                height={24}
+                className="w-6 h-6 mr-1"
+              />
               <h1 className="font-bold text-lg">Quant Trader AI</h1>
             </Link>
           </Button>

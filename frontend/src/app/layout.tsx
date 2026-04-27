@@ -16,13 +16,13 @@ export const metadata: Metadata = {
     icon: [
       {
         media: "(prefers-color-scheme: light)",
-        url: "/gem.ico",
-        href: "/gem.ico",
+        url: "/qtrader_ai.ico",
+        href: "/qtrader_ai.ico",
       },
       {
         media: "(prefers-color-scheme: dark)",
-        url: "/gem.ico",
-        href: "/gem.ico",
+        url: "/qtrader_ai.ico",
+        href: "/qtrader_ai.ico",
       },
     ],
   },
