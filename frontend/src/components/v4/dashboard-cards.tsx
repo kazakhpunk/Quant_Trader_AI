@@ -10,6 +10,8 @@ import { getRatings, RatingRow, VISIBLE_DIMENSIONS } from "@/lib/api/ratings";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PnlChart } from "@/components/v4/dashboard/pnl-chart";
 import { PositionPie } from "@/components/v4/dashboard/position-pie";
+import { closePosition, cancelOrder } from "@/lib/api/orders";
+import { X } from "lucide-react";
 
 interface AccountData {
   portfolio_value: number;
@@ -96,22 +98,48 @@ const formatPercent = (value: unknown) =>
 const Dashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { isSignedIn } = useUser();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const { isSignedIn, user } = useUser();
+  const email = user?.primaryEmailAddress?.emailAddress ?? "";
+
+  const refresh = async () => {
+    const token = localStorage.getItem("alpaca_access_token");
+    if (!token) {
+      setData(null);
+      return;
+    }
+    const dashboardData = await fetchDashboardData(token);
+    setData(dashboardData);
+  };
 
   useEffect(() => {
     const loadData = async () => {
-      const token = localStorage.getItem("alpaca_access_token");
-      if (!token) {
-        setLoading(false);
-        setData(null);
-        return;
-      }
-      const dashboardData = await fetchDashboardData(token);
-      setData(dashboardData);
+      setLoading(true);
+      await refresh();
       setLoading(false);
     };
     loadData();
   }, []);
+
+  const handleClosePosition = async (symbol: string) => {
+    if (!email) return;
+    if (!confirm(`Close ${symbol} at market? This sells the entire position.`)) return;
+    setBusyId(`pos:${symbol}`);
+    const r = await closePosition(email, false, symbol);
+    if (!r.ok) alert(r.error || `Failed to close ${symbol}`);
+    setBusyId(null);
+    await refresh();
+  };
+
+  const handleCancelOrder = async (orderId: string, symbol: string) => {
+    if (!email) return;
+    if (!confirm(`Cancel open order on ${symbol}?`)) return;
+    setBusyId(`ord:${orderId}`);
+    const r = await cancelOrder(email, false, orderId);
+    if (!r.ok) alert(r.error || `Failed to cancel order`);
+    setBusyId(null);
+    await refresh();
+  };
 
   const [ratings, setRatings] = useState<Record<string, RatingRow>>({});
   useEffect(() => {
@@ -248,13 +276,14 @@ const Dashboard = () => {
                   %
                 </th>
                 <th className="hidden px-4 py-3 text-right font-medium md:table-cell">Rating</th>
+                <th className="w-16 px-4 py-3 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {positions.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-4 py-12 text-center text-sm text-muted-foreground"
                   >
                     No open positions yet.
@@ -310,6 +339,17 @@ const Dashboard = () => {
                       <td className="hidden px-4 py-3 text-right md:table-cell">
                         <RatingCell row={ratings[p.symbol]} />
                       </td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleClosePosition(p.symbol); }}
+                          disabled={busyId === `pos:${p.symbol}`}
+                          className="rounded-md border border-rose-300/60 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-rose-700 transition hover:bg-rose-50 disabled:opacity-50 dark:border-rose-800/60 dark:text-rose-300 dark:hover:bg-rose-950/40"
+                          title={`Close ${p.symbol} at market`}
+                        >
+                          {busyId === `pos:${p.symbol}` ? "…" : "Close"}
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -338,13 +378,14 @@ const Dashboard = () => {
                   Filled
                 </th>
                 <th className="px-4 py-3 text-right font-medium">Status</th>
+                <th className="w-16 px-4 py-3 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
               {orders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-4 py-12 text-center text-sm text-muted-foreground"
                   >
                     No open orders.
@@ -371,6 +412,18 @@ const Dashboard = () => {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <StatusBadge status={o.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleCancelOrder(o.id, o.symbol); }}
+                        disabled={busyId === `ord:${o.id}`}
+                        className="inline-flex items-center gap-1 rounded-md border border-border/70 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground transition hover:bg-muted/40 hover:text-foreground disabled:opacity-50"
+                        title={`Cancel order on ${o.symbol}`}
+                      >
+                        <X className="h-3 w-3" />
+                        {busyId === `ord:${o.id}` ? "…" : "Cancel"}
+                      </button>
                     </td>
                   </tr>
                 ))
