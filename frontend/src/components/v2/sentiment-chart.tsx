@@ -30,7 +30,7 @@ import { Combobox } from "./combobox";
 import { getApiUrl } from "@/lib/utils";
 import { Loader } from "@/components/v4/loader";
 import { Button } from "../ui/button";
-import Link from "next/link";
+import { useOrderDrawer } from "@/lib/order-drawer-store";
 
 const chartConfig = {
   score: {
@@ -51,6 +51,7 @@ export function SentimentChart() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const openDrawer = useOrderDrawer((s) => s.open);
 
   const fetchData = async (ticker: string) => {
     setLoading(true);
@@ -97,10 +98,10 @@ export function SentimentChart() {
         <Combobox onSelectTicker={setSelectedTicker} />
         <Button
           variant="outline"
-          className="w-[160px] h-[36px] justify-center rounded-lg"
-          asChild
+          className="h-[36px] justify-center rounded-lg"
+          onClick={() => openDrawer(selectedTicker)}
         >
-          <Link href="/trade">Buy Stock</Link>
+          Buy {selectedTicker}
         </Button>
       </CardHeader>
       <CardContent>

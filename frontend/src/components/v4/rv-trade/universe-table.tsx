@@ -31,23 +31,25 @@ const SOURCE_LABEL: Record<AssetDto["source"], string> = {
 
 export function UniverseTable({ countries }: { countries: AssetDto[] }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/60">
-      <table className="w-full table-auto">
+    <div className="overflow-x-auto overflow-y-hidden">
+      <table className="w-full min-w-[480px] table-auto">
         <thead className="bg-muted/30">
           <tr className="text-left">
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">ID</th>
             <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Name</th>
             <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Category</th>
             <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Tags</th>
             <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium">Source</th>
-            <th className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground font-medium text-right">Series</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/60">
           {countries.map((c) => (
             <tr key={c.iso} className="transition-colors hover:bg-muted/30">
-              <td className="px-4 py-3 font-mono text-xs">{c.iso}</td>
-              <td className="px-4 py-3 text-sm">{c.name}</td>
+              <td className="px-4 py-3 text-sm">
+                <div>{c.name}</div>
+                <div className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {c.iso}
+                </div>
+              </td>
               <td className="px-4 py-3 text-xs uppercase tracking-wider text-muted-foreground">
                 {c.category}
               </td>
@@ -59,9 +61,6 @@ export function UniverseTable({ countries }: { countries: AssetDto[] }) {
                 <Badge variant={c.source === "fred" ? "secondary" : "outline"}>
                   {SOURCE_LABEL[c.source]}
                 </Badge>
-              </td>
-              <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
-                {c.seriesId}
               </td>
             </tr>
           ))}

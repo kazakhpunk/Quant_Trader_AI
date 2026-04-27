@@ -13,10 +13,17 @@ export function PairTable({ pairs }: { pairs: PairDto[] }) {
   );
   return (
     <div className="space-y-3">
-      <div className="flex gap-2 text-sm">
+      <div className="flex gap-2 px-4 pt-4 text-sm">
         {(["all", "active", "rejected"] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`rounded-md border px-3 py-1 ${filter === f ? "bg-primary text-primary-foreground" : ""}`}>
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className={`rounded-md border px-3 py-1.5 text-xs uppercase tracking-wider transition ${
+              filter === f
+                ? "border-foreground bg-primary text-primary-foreground"
+                : "border-border/70 text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+            }`}
+          >
             {f}
           </button>
         ))}

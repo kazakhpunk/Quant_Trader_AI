@@ -33,7 +33,7 @@ import {
 import { Combobox } from "./combobox";
 import { getApiUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useOrderDrawer } from "@/lib/order-drawer-store";
 
 const initialData: any[] = [];
 const chartConfig = {
@@ -55,6 +55,7 @@ export default function PriceChart() {
   const [chartData, setChartData] = React.useState(initialData);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const openDrawer = useOrderDrawer((s) => s.open);
   const [selectedTicker, setSelectedTicker] = React.useState<string>("AAPL");
 
   const fetchChartData = async (ticker: string, timeRange: string) => {
@@ -172,10 +173,10 @@ export default function PriceChart() {
         </Select>
         <Button
           variant="outline"
-          className="w-[160px] h-[36px] justify-center rounded-lg"
-          asChild
+          className="h-[36px] justify-center rounded-lg"
+          onClick={() => openDrawer(selectedTicker)}
         >
-          <Link href="/trade">Buy Stock</Link>
+          Buy {selectedTicker}
         </Button>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">

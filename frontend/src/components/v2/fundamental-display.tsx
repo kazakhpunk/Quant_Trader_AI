@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { getApiUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
-import Link from "next/link";
+import { useOrderDrawer } from "@/lib/order-drawer-store";
 
 interface IndicatorCardProps {
   title: string;
@@ -52,6 +52,7 @@ const IndicatorCard: React.FC<IndicatorCardProps> = ({ title, value }) => {
 export default function FundamentalAnalysis() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const openDrawer = useOrderDrawer((s) => s.open);
   const [selectedTicker, setSelectedTicker] = React.useState<string>("AAPL");
   const [analysisData, setAnalysisData] = React.useState<any>(null);
 
@@ -97,10 +98,10 @@ export default function FundamentalAnalysis() {
         <Combobox onSelectTicker={setSelectedTicker} />
         <Button
           variant="outline"
-          className="w-[160px] h-[36px] justify-center rounded-lg"
-          asChild
+          className="h-[36px] justify-center rounded-lg"
+          onClick={() => openDrawer(selectedTicker)}
         >
-          <Link href="/trade">Buy Stock</Link>
+          Buy {selectedTicker}
         </Button>
       </CardHeader>
       <CardContent className="mt-6">

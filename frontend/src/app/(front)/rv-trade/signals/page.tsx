@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { rvApi, SignalDto } from "@/lib/api/rv";
 import { Loader } from "@/components/v4/loader";
 import { RefreshCw } from "lucide-react";
+import { SignalsInfoDialog } from "@/components/v4/rv-trade/info-dialogs";
 
 export default function RvSignalsPage() {
   const [signals, setSignals] = useState<SignalDto[]>([]);
@@ -42,10 +43,18 @@ export default function RvSignalsPage() {
             {asOf && <span className="ml-1 font-mono text-xs uppercase tracking-wider">· as of {asOf}</span>}
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => load(true)} disabled={loading} className="gap-2">
-          <RefreshCw className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
-          {loading ? "Refreshing…" : "Refresh"}
-        </Button>
+        <div className="flex items-center gap-2">
+          <SignalsInfoDialog />
+          <Button
+            variant="outline"
+            onClick={() => load(true)}
+            disabled={loading}
+            className="h-7 gap-1.5 rounded-md border-border/70 bg-background px-2.5 text-[11px] font-medium uppercase tracking-wider text-foreground shadow-sm transition hover:bg-muted/40"
+          >
+            <RefreshCw className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+            {loading ? "Refreshing…" : "Refresh"}
+          </Button>
+        </div>
       </div>
 
       <Card className="border-border/60">

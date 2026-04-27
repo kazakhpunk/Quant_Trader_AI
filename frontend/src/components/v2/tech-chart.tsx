@@ -39,7 +39,7 @@ import {
 } from "recharts/types/component/DefaultTooltipContent";
 import { getApiUrl } from "@/lib/utils";
 import { Button } from "../ui/button";
-import Link from "next/link";
+import { useOrderDrawer } from "@/lib/order-drawer-store";
 
 const chartConfig = {
   rsi14: {
@@ -72,6 +72,7 @@ export default function TechnicalCharts() {
   const [rsiData, setRsiData] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const openDrawer = useOrderDrawer((s) => s.open);
 
   const fetchSMAData = async (ticker: string, timeRange: string) => {
     setLoading(true);
@@ -240,10 +241,10 @@ export default function TechnicalCharts() {
           </Select>
           <Button
             variant="outline"
-            className="w-[160px] h-[36px] justify-center rounded-lg"
-            asChild
+            className="h-[36px] justify-center rounded-lg"
+            onClick={() => openDrawer(selectedTicker)}
           >
-            <Link href="/trade">Buy Stock</Link>
+            Buy {selectedTicker}
           </Button>
         </CardHeader>
         <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6 space-y-6">

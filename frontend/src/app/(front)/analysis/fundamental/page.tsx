@@ -12,7 +12,6 @@ import {
   BreadcrumbSeparator
 } from "@/components/ui/breadcrumb";
 import FundamentalAnalysis from "@/components/v2/fundamental-display";
-import { TradeButton } from "@/components/v4/order-drawer/trade-button";
 import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
 
 export default function NewPostPage() {
@@ -43,7 +42,6 @@ export default function NewPostPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <TradeButton />
       {/* <PlaceholderContent /> */}
       {/* <FundamentalChart /> */}
       <FundamentalAnalysis/>

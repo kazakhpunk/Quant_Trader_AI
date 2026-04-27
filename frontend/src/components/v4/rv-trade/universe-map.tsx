@@ -8,6 +8,7 @@ import {
   Scatter,
   XAxis,
   YAxis,
+  ZAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
@@ -144,6 +145,8 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="x" type="number" name="PC1" tickFormatter={() => ""} />
             <YAxis dataKey="y" type="number" name="PC2" tickFormatter={() => ""} />
+            {/* ZAxis with a fixed range gives every dot the same (large) size. */}
+            <ZAxis range={[260, 260]} />
             <Tooltip
               cursor={{ strokeDasharray: "3 3" }}
               content={({ payload }) => {

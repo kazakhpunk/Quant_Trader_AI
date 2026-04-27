@@ -10,6 +10,7 @@ import { TradeLogTable } from "@/components/v4/rv-trade/trade-log-table";
 import { RunsHistoryTable } from "@/components/v4/rv-trade/runs-history-table";
 import { rvApi, BacktestConfigDto, BacktestRunDto } from "@/lib/api/rv";
 import { Loader } from "@/components/v4/loader";
+import { BacktestInfoDialog } from "@/components/v4/rv-trade/info-dialogs";
 
 const DEFAULT_CONFIG: BacktestConfigDto = {
   rules: { entryZ: 2.0, exitZ: 0.5, stopZ: 3.5, maxHoldingDays: 60, costBpsRoundTrip: 30, sizing: "equalWeight" },
@@ -56,6 +57,7 @@ export default function RvBacktestPage() {
             Equal-weight or inverse-vol sizing across active pairs.
           </p>
         </div>
+        <BacktestInfoDialog />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
