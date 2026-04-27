@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AssetDto, AssetCategory, SeriesStatsDto, rvApi } from "@/lib/api/rv";
+import { Loader } from "@/components/v4/loader";
 import {
   ScatterChart,
   Scatter,
@@ -108,11 +109,7 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
     );
   }
   if (!statsByIso) {
-    return (
-      <div className="flex h-[420px] w-full items-center justify-center text-sm text-muted-foreground">
-        Computing series stats… (first call after restart can take ~30s)
-      </div>
-    );
+    return <Loader height="420px" message="Computing series stats…" />;
   }
 
   // Merge fetched stats onto the static countries list.

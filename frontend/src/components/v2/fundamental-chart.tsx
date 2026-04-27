@@ -18,6 +18,7 @@ import {
     ChartTooltipContent,
 } from "@/components/ui/chart";
 import { getApiUrl } from "@/lib/utils";
+import { Loader } from "@/components/v4/loader";
 
 // Normalization function
 function normalizeData(data: any) {
@@ -118,7 +119,7 @@ export function FundamentalChart({ ticker }: { ticker: string }) {
         fetchChartData(selectedTicker);
     }, [selectedTicker]);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <Loader height="320px" message="Loading fundamental data…" />;
     if (error) return <div>{error}</div>;
 
     return (

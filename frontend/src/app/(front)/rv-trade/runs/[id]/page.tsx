@@ -8,6 +8,7 @@ import { EquityCurve } from "@/components/v4/rv-trade/equity-curve";
 import { MetricsCard } from "@/components/v4/rv-trade/metrics-card";
 import { TradeLogTable } from "@/components/v4/rv-trade/trade-log-table";
 import { rvApi, BacktestRunDto } from "@/lib/api/rv";
+import { Loader } from "@/components/v4/loader";
 
 export default function RvRunDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -19,7 +20,7 @@ export default function RvRunDetailPage() {
   }, [id]);
 
   if (error) return <ContentLayout title="Run"><p className="text-destructive">{error}</p></ContentLayout>;
-  if (!run) return <ContentLayout title="Run"><p>Loading...</p></ContentLayout>;
+  if (!run) return <ContentLayout title="Run"><Loader message="Loading run…" /></ContentLayout>;
 
   return (
     <ContentLayout title={`Run ${id.slice(0, 8)}`}>

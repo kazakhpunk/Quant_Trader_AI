@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CircularProgress } from "@mui/material";
+import { Loader } from "@/components/v4/loader";
 import Link from "next/link";
 import { useUser } from "@clerk/clerk-react";
 import { cn } from "@/lib/utils";
@@ -123,11 +123,7 @@ const Dashboard = () => {
   const openDrawer = useOrderDrawer((s) => s.open);
 
   if (loading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <CircularProgress />
-      </div>
-    );
+    return <Loader height="60vh" message="Loading dashboard…" />;
   }
 
   if (!data || !isSignedIn) {

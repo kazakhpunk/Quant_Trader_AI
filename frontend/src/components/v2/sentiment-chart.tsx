@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/chart";
 import { Combobox } from "./combobox";
 import { getApiUrl } from "@/lib/utils";
+import { Loader } from "@/components/v4/loader";
 import { Button } from "../ui/button";
 import Link from "next/link";
 
@@ -78,7 +79,7 @@ export function SentimentChart() {
     fetchData(selectedTicker);
   }, [selectedTicker]);
 
-  if (loading) return <div className="mt-5">Loading...</div>;
+  if (loading) return <Loader height="320px" message="Loading sentiment data…" />;
   if (error) return <div className="mt-5">{error}</div>;
 
   const isMobile = window.innerWidth < 640;

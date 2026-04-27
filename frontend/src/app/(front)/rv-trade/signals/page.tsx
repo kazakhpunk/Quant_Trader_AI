@@ -6,6 +6,7 @@ import { SignalTable } from "@/components/v4/rv-trade/signal-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { rvApi, SignalDto } from "@/lib/api/rv";
+import { Loader } from "@/components/v4/loader";
 
 export default function RvSignalsPage() {
   const [signals, setSignals] = useState<SignalDto[]>([]);
@@ -37,7 +38,9 @@ export default function RvSignalsPage() {
         </CardHeader>
         <CardContent>
           {error && <p className="text-sm text-destructive mb-3">{error}</p>}
-          <SignalTable signals={signals} />
+          {loading && signals.length === 0
+            ? <Loader height="320px" message="Computing signals…" />
+            : <SignalTable signals={signals} />}
         </CardContent>
       </Card>
     </ContentLayout>
