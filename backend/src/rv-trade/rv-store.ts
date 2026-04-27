@@ -64,4 +64,22 @@ export class RvStore {
       { upsert: true },
     );
   }
+
+  /** Generic JSON blob cache keyed by string. Used to persist the computed
+   *  universe-stats payload across server restarts (the in-process memoize
+   *  resets on boot; this survives). */
+  async getCachedJson<T = any>(key: string, maxAgeMs: number): Promise<T | null> {
+    const doc = await this.db.collection('rv_json_cache').findOne({ _id: key as any });
+    if (!doc) return null;
+    if (Date.now() - new Date(doc.ts).getTime() > maxAgeMs) return null;
+    return doc.value as T;
+  }
+
+  async setCachedJson<T>(key: string, value: T): Promise<void> {
+    await this.db.collection('rv_json_cache').updateOne(
+      { _id: key as any },
+      { $set: { _id: key, ts: new Date().toISOString(), value } },
+      { upsert: true },
+    );
+  }
 }

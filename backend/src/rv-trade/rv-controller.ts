@@ -31,7 +31,17 @@ export class RvController {
   };
 
   getUniverseStats = async (_req: Request, res: Response) => {
+    // Three-tier cache: in-process memo (5min) → Mongo daily cache (24h)
+    // → fresh compute. Mongo layer survives server restarts so the first
+    // PCA map render after a deploy hits a warm payload, not a cold fetch.
     const result = await memoize('rv:universe-stats', RESPONSE_CACHE_MS, async () => {
+      const dayKey = `rv:universe-stats:${new Date().toISOString().slice(0, 10)}`;
+      const mongoCached = await this.store.getCachedJson<{ stats: any }>(
+        dayKey,
+        24 * 60 * 60 * 1000,
+      );
+      if (mongoCached) return mongoCached;
+
       let series: Map<string, { dates: string[]; values: number[] }>;
       try { series = await this.fetchSeries(); } catch { series = new Map(); }
       const stats: Record<string, ReturnType<typeof computeSeriesStats>> = {};
@@ -39,7 +49,9 @@ export class RvController {
         const s = series.get(a.iso);
         stats[a.iso] = s && s.values.length >= 30 ? computeSeriesStats(s.values) : null;
       }
-      return { stats };
+      const payload = { stats };
+      await this.store.setCachedJson(dayKey, payload);
+      return payload;
     });
     res.json(result);
   };
