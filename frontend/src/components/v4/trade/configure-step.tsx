@@ -24,7 +24,7 @@ export function ConfigureStep({
   const cents = Math.round((state.amount - dollars) * 100).toString().padStart(2, "0");
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 md:py-16">
+    <div className="mx-auto w-full max-w-3xl px-4 py-10 md:pb-12">
       <p className="text-xs uppercase tracking-widest text-muted-foreground">Allocate capital</p>
       <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">Purchase stocks</h1>
       <p className="mt-3 text-muted-foreground">
@@ -50,12 +50,29 @@ export function ConfigureStep({
 
       <div className="mt-8 flex flex-wrap justify-center gap-2">
         {PRESETS.map((pct) => {
-          const target = availableCash ? (availableCash * pct) / 100 : pct;
-          const active = Math.abs(state.amount - target) < 0.01;
+          // Don't resolve a target — or treat any preset as active — until
+          // availableCash has actually loaded. Previously the 100% preset
+          // fell back to a literal $100 target, which coincidentally matched
+          // the default state.amount and rendered the button as active for
+          // a frame before the real cash arrived ("black for a sec then
+          // unbuttoned").
+          const target =
+            availableCash != null ? (availableCash * pct) / 100 : null;
+          const active =
+            target != null && Math.abs(state.amount - target) < 0.01;
+          const ready = target != null;
           return (
-            <button key={pct} type="button"
-              onClick={() => set({ amount: +target.toFixed(2) })}
-              className={`rounded-full border px-4 py-1.5 text-sm font-medium ${active ? "border-primary bg-primary text-primary-foreground" : "border-border/60 text-muted-foreground hover:text-foreground"}`}>
+            <button
+              key={pct}
+              type="button"
+              disabled={!ready}
+              onClick={() => ready && set({ amount: +target!.toFixed(2) })}
+              className={`rounded-full border px-4 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border/60 text-muted-foreground hover:text-foreground"
+              }`}
+            >
               {pct}%
             </button>
           );
