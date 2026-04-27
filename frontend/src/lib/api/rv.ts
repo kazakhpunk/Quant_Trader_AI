@@ -86,10 +86,62 @@ async function http<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// Module-level in-flight tracking so two simultaneous mounts (e.g. React strict
+// mode double-effect) share the same network request instead of racing.
+const inflight = new Map<string, Promise<any>>();
+
+/** sessionStorage-backed cache + in-flight de-dup for read-only RV endpoints.
+ *  The backend has a 24h Mongo cache for the same payload — this layer just
+ *  saves the network round-trip on repeat mounts and page navigations within
+ *  the same browser session. */
+export function readCache<T>(key: string, maxAgeMs: number): T | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const { ts, value } = JSON.parse(raw) as { ts: number; value: T };
+    if (Date.now() - ts > maxAgeMs) return null;
+    return value;
+  } catch { return null; }
+}
+
+function writeCache<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), value }));
+  } catch { /* quota / private mode */ }
+}
+
+async function cached<T>(key: string, maxAgeMs: number, fetcher: () => Promise<T>): Promise<T> {
+  const hit = readCache<T>(key, maxAgeMs);
+  if (hit) return hit;
+  const inflightHit = inflight.get(key) as Promise<T> | undefined;
+  if (inflightHit) return inflightHit;
+  const p = fetcher().then((v) => { writeCache(key, v); return v; })
+                    .finally(() => { inflight.delete(key); });
+  inflight.set(key, p);
+  return p;
+}
+
+// 30-minute client TTL: PCA inputs only change once per trading day on the
+// backend, but we keep the client TTL shorter than that so a manual refresh
+// or a stats correction propagates within the session.
+const UNIVERSE_STATS_TTL_MS = 30 * 60 * 1000;
+
 export const rvApi = {
   getUniverse: () => http<{ universe: AssetDto[] }>(`${API_BASE}/api/v4/rv/universe`),
   getUniverseStats: () =>
-    http<{ stats: Record<string, SeriesStatsDto | null> }>(`${API_BASE}/api/v4/rv/universe/stats`),
+    cached(
+      'rv:universe-stats',
+      UNIVERSE_STATS_TTL_MS,
+      () => http<{ stats: Record<string, SeriesStatsDto | null> }>(`${API_BASE}/api/v4/rv/universe/stats`),
+    ),
+  /** Skip the client cache and force a fresh round-trip. Useful for an
+   *  explicit "refresh" affordance later. */
+  refreshUniverseStats: () => {
+    if (typeof window !== 'undefined') sessionStorage.removeItem('rv:universe-stats');
+    return http<{ stats: Record<string, SeriesStatsDto | null> }>(`${API_BASE}/api/v4/rv/universe/stats`);
+  },
   getPairs:    () => http<{ pairs: PairDto[]; config: any }>(`${API_BASE}/api/v4/rv/pairs`),
   getSignals:  () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals`),
   refreshSignals: () => http<{ asOf: string; signals: SignalDto[] }>(`${API_BASE}/api/v4/rv/signals/refresh`, { method: 'POST' }),

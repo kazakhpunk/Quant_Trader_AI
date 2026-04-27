@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AssetDto, AssetCategory, SeriesStatsDto, rvApi } from "@/lib/api/rv";
+import { AssetDto, AssetCategory, SeriesStatsDto, rvApi, readCache } from "@/lib/api/rv";
 import { Loader } from "@/components/v4/loader";
 import {
   ScatterChart,
@@ -89,17 +89,33 @@ const CATEGORY_COLORS: Record<AssetCategory, string> = {
   etf: "#eab308",
 };
 
+// Same TTL the rv API helper uses internally — kept in sync so a warm cache
+// hydrates the chart synchronously and the loader never flashes.
+const UNIVERSE_STATS_TTL_MS = 30 * 60 * 1000;
+
 export function UniverseMap({ countries }: { countries: AssetDto[] }) {
-  const [statsByIso, setStatsByIso] = useState<Record<string, SeriesStatsDto | null> | null>(null);
+  // Hydrate from sessionStorage on first render so a warm cache renders
+  // immediately without showing the loader.
+  const [statsByIso, setStatsByIso] = useState<Record<string, SeriesStatsDto | null> | null>(() => {
+    const hit = readCache<{ stats: Record<string, SeriesStatsDto | null> }>(
+      'rv:universe-stats',
+      UNIVERSE_STATS_TTL_MS,
+    );
+    return hit?.stats ?? null;
+  });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Skip the network round-trip when we already hydrated from cache.
+    if (statsByIso) return;
     let alive = true;
     rvApi
       .getUniverseStats()
       .then((r) => { if (alive) setStatsByIso(r.stats); })
       .catch((e) => { if (alive) setError(e.message); });
     return () => { alive = false; };
+    // Run only on first mount; we intentionally don't react to statsByIso flips.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (error) {
@@ -110,7 +126,7 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
     );
   }
   if (!statsByIso) {
-    return <Loader height="420px" message="Computing series stats…" />;
+    return <Loader height="420px" message="Loading universe map…" />;
   }
 
   // Merge fetched stats onto the static countries list.
