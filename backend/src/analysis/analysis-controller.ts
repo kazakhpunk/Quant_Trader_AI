@@ -1,6 +1,9 @@
 import { Request, Response } from 'express';
 import AnalysisService from './analysis-service';
 import { AnalysisResult } from './types/analysisModel';
+import { memoize } from '../lib/response-cache';
+
+const CHART_CACHE_MS = 10 * 60 * 1000; // chart endpoints — same data within session
 
 class AnalysisController {
   private analysisService: AnalysisService;
@@ -61,8 +64,12 @@ class AnalysisController {
   public async getFundamentalData(req: Request, res: Response): Promise<void> {
     try {
       const ticker = req.params.ticker;
-      const results = await this.analysisService.getFundamentalData(ticker);
-      res.json(results); // Return the full data including the SMA calculations
+      const results = await memoize(
+        `analysis:fundamental:${ticker}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.getFundamentalData(ticker),
+      );
+      res.json(results);
     } catch (error: any) {
       console.error("Error in fetchAllSmaData:", error);
       res.status(500).json({ error: error.message });
@@ -144,8 +151,12 @@ class AnalysisController {
   public async analyzeSentiment(req: Request, res: Response): Promise<void> {
     try {
       const ticker = req.params.ticker;
-      const results = await this.analysisService.analyzeSentiment(ticker);
-      res.json(results); // Return the full data including the SMA calculations
+      const results = await memoize(
+        `analysis:sentiment:${ticker}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.analyzeSentiment(ticker),
+      );
+      res.json(results);
     } catch (error: any) {
       console.error("Error in Analyzing Sentiment:", error);
       res.status(500).json({ error: error.message });
@@ -173,11 +184,14 @@ class AnalysisController {
   }
 
   public async fetchIntervalHistoricalData(req: Request, res: Response): Promise<void> {
-    const ticker = req.query.ticker as string; 
+    const ticker = req.query.ticker as string;
     const scale = req.query.scale as "7d" | "30d" | "3mo";
     try {
-      console.log(ticker, scale);
-      const data = await this.analysisService.fetchIntervalHistoricalData(ticker, scale);
+      const data = await memoize(
+        `analysis:interval-history:${ticker}:${scale}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.fetchIntervalHistoricalData(ticker, scale),
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -197,11 +211,14 @@ class AnalysisController {
   }
 
   public async getIntervalSMAData(req: Request, res: Response): Promise<void> {
-    const ticker = req.query.ticker as string; 
+    const ticker = req.query.ticker as string;
     const scale = req.query.scale as "7d" | "30d" | "3mo";
     try {
-      console.log(ticker, scale);
-      const data = await this.analysisService.getIntervalSMAData(ticker, scale);
+      const data = await memoize(
+        `analysis:sma:${ticker}:${scale}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.getIntervalSMAData(ticker, scale),
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -209,11 +226,14 @@ class AnalysisController {
   }
 
   public async getIntervalEMAData(req: Request, res: Response): Promise<void> {
-    const ticker = req.query.ticker as string; 
+    const ticker = req.query.ticker as string;
     const scale = req.query.scale as "7d" | "30d" | "3mo";
     try {
-      console.log(ticker, scale);
-      const data = await this.analysisService.getIntervalEMAData(ticker, scale);
+      const data = await memoize(
+        `analysis:ema:${ticker}:${scale}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.getIntervalEMAData(ticker, scale),
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -221,11 +241,14 @@ class AnalysisController {
   }
 
   public async getIntervalRSIData(req: Request, res: Response): Promise<void> {
-    const ticker = req.query.ticker as string; 
+    const ticker = req.query.ticker as string;
     const scale = req.query.scale as "7d" | "30d" | "3mo";
     try {
-      console.log(ticker, scale);
-      const data = await this.analysisService.getIntervalRSIData(ticker, scale);
+      const data = await memoize(
+        `analysis:rsi:${ticker}:${scale}`,
+        CHART_CACHE_MS,
+        () => this.analysisService.getIntervalRSIData(ticker, scale),
+      );
       res.json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
