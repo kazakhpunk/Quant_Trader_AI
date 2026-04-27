@@ -58,6 +58,23 @@ class TradeService {
     }
   }
 
+  /** Symbols that already have a pending (un-filled) order on the user's
+   *  brokerage. Used by previewTrades to avoid re-stacking an order on
+   *  top of one that hasn't filled yet. */
+  private async getOpenOrderSymbols(email: string, isLive: boolean): Promise<Set<string>> {
+    try {
+      const accessToken = await this.getAccessToken(email);
+      if (!accessToken) return new Set();
+      const apiUrl = this.getApiBaseUrl(isLive);
+      const { data } = await axios.get(`${apiUrl}/orders?status=open`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      return new Set<string>((data || []).map((o: any) => o.symbol));
+    } catch {
+      return new Set();
+    }
+  }
+
   private getApiBaseUrl(isLive: boolean): string {
     return isLive
       ? "https://api.alpaca.markets/v2"
@@ -291,8 +308,14 @@ class TradeService {
     const afterSentiment = pool.length;
 
     if (skipHeld) {
-      const held = await this.getCurrentHoldings(req.email, req.isLiveTrading);
-      pool = pool.filter((c) => !held.has(c.ticker));
+      // Skip tickers we already hold OR have a pending open order for —
+      // the engine shouldn't double-up on a position or stack a fresh
+      // buy on top of one that hasn't filled.
+      const [held, pending] = await Promise.all([
+        this.getCurrentHoldings(req.email, req.isLiveTrading),
+        this.getOpenOrderSymbols(req.email, req.isLiveTrading),
+      ]);
+      pool = pool.filter((c) => !held.has(c.ticker) && !pending.has(c.ticker));
     }
     const afterSkipHeld = pool.length;
 
