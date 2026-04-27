@@ -108,15 +108,21 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
         return res.json({ timestamp: [], pnl: [], pct: [], base_value: 0 });
       }
 
-      const indexed = positionData.map((p) => {
-        const byDate = new Map<string, number>();
-        for (const b of p.bars) byDate.set(b.date, b.close);
-        return { ...p, byDate, sortedDs: Array.from(byDate.keys()).sort() };
-      });
+      // Only positions that actually got bars contribute to the chart's pnl
+      // line — so the baseline must be computed over the same subset, or
+      // pct = pnl / baseline collapses to ~0% (small numerator, oversized
+      // denominator) and the chart looks like it's flat at zero.
+      const indexed = positionData
+        .filter((p) => p.bars.length > 0)
+        .map((p) => {
+          const byDate = new Map<string, number>();
+          for (const b of p.bars) byDate.set(b.date, b.close);
+          return { ...p, byDate, sortedDs: Array.from(byDate.keys()).sort() };
+        });
 
       // Cost basis is dollars-at-risk; |qty| keeps shorts (negative qty)
       // from subtracting from longs and flipping the % sign relative to $.
-      const baseline = positions.reduce(
+      const baseline = indexed.reduce(
         (s, p) => s + Math.abs(p.avgEntryPrice * p.qty),
         0,
       );
