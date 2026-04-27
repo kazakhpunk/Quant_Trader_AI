@@ -1,0 +1,4 @@
+# Nixpacks build override — pin Node 20 because yahoo-finance2@^3
+# requires Node ≥20 (build was defaulting to 18 and failing yarn install).
+[phases.setup]
+nixPkgs = ["nodejs_20", "yarn"]

@@ -10,6 +10,9 @@
     "start": "node ./dist/index.js",
     "start:dev": "nodemon ./src/index.ts"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
