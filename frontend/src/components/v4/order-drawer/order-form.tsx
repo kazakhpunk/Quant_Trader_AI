@@ -7,6 +7,13 @@ import { Switch } from "@/components/ui/switch";
 import { fetchLatestPrice, PlaceOrderInput } from "@/lib/api/orders";
 import { useUser } from "@clerk/nextjs";
 import { RiskControls, RiskValues } from "./risk-controls";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 
 export interface OrderFormValues extends Omit<PlaceOrderInput, "email"> {}
 
@@ -52,6 +59,8 @@ export function OrderForm({
   const numericInput = parseFloat(qtyInput) || 0;
   const resolvedQty = unit === "shares" ? numericInput : (price ? numericInput / price : 0);
   const resolvedNotional = unit === "dollars" ? numericInput : (price ? numericInput * price : 0);
+  const isFractionalQty = Math.abs(resolvedQty - Math.round(resolvedQty)) > 1e-9;
+  const blocksFractionalShort = side === "sell" && resolvedQty > 0 && isFractionalQty;
 
   const submit = () => {
     onReview(
@@ -106,6 +115,11 @@ export function OrderForm({
             ≈ {resolvedQty.toFixed(4)} shares · ${resolvedNotional.toFixed(2)}
           </p>
         )}
+        {blocksFractionalShort && (
+          <p className="mt-2 text-xs text-amber-600">
+            Short orders must use whole shares. Switch to shares and enter a whole number.
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 overflow-hidden rounded-md border border-border/60">
@@ -124,13 +138,65 @@ export function OrderForm({
         </div>
       )}
 
-      <div className="grid grid-cols-2 overflow-hidden rounded-md border border-border/60">
-        {(["day", "gtc"] as const).map((t) => (
-          <button key={t} onClick={() => setTif(t)}
-            className={`py-2 text-sm font-medium uppercase tracking-wide ${tif === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-            {t}
-          </button>
-        ))}
+      <div>
+        <div className="mb-2 flex items-center gap-1.5">
+          <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+            Time in force
+          </Label>
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What does Time in Force mean?"
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 transition hover:bg-muted/50 hover:text-foreground"
+                >
+                  <Info className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="top"
+                align="start"
+                className="max-w-[18rem] bg-foreground p-0 text-background shadow-lg"
+              >
+                <div className="space-y-2 p-3 text-left">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.2em] opacity-70">
+                    Time in force
+                  </p>
+                  <div className="space-y-1.5 text-[11px] leading-relaxed">
+                    <p>
+                      <span className="font-mono font-semibold uppercase tracking-wider">
+                        Day
+                      </span>
+                      <span className="opacity-80">
+                        {" — auto-cancels at the next 4:00 PM ET close if not filled."}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="font-mono font-semibold uppercase tracking-wider">
+                        GTC
+                      </span>
+                      <span className="opacity-80">
+                        {" — Good-Til-Canceled. Stays open across sessions until it fills, you cancel, or it ages out (Alpaca: 90 days)."}
+                      </span>
+                    </p>
+                  </div>
+                  <p className="border-t border-background/15 pt-1.5 font-mono text-[10px] uppercase tracking-wider opacity-60">
+                    {"Use GTC for limit orders you're willing to wait on"}
+                  </p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <div className="grid grid-cols-2 overflow-hidden rounded-md border border-border/60">
+          {(["day", "gtc"] as const).map((t) => (
+            <button key={t} onClick={() => setTif(t)}
+              className={`py-2 text-sm font-medium uppercase tracking-wide ${tif === t ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+              {t}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex items-center justify-between border-t border-border/40 pt-4">
@@ -140,7 +206,7 @@ export function OrderForm({
 
       <RiskControls value={risk} onChange={setRisk} referencePrice={price} />
 
-      <Button className="h-12 w-full" disabled={!numericInput || (orderType === "limit" && !limitPrice)}
+      <Button className="h-12 w-full" disabled={!numericInput || blocksFractionalShort || (orderType === "limit" && !limitPrice)}
         onClick={submit}>
         Review {side} {symbol}
         {price != null && unit === "shares" && ` · ~$${(numericInput * price).toFixed(2)}`}
