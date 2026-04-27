@@ -23,7 +23,7 @@ type Period = "1W" | "1M" | "3M" | "1A";
 const PERIODS: Period[] = ["1W", "1M", "3M", "1A"];
 
 const chartConfig = {
-  pnl: { label: "Cumulative P&L", color: "hsl(var(--chart-1))" },
+  pnl: { label: "Unrealized P&L", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 interface HistoryPayload {
@@ -109,7 +109,7 @@ export function PnlChart() {
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 bg-muted/20 px-5 py-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Portfolio P&amp;L
+            Unrealized P&amp;L
           </p>
           <div className="mt-1 flex items-baseline gap-3">
             <span
@@ -215,14 +215,21 @@ export function PnlChart() {
                   cursor={{ stroke: "hsl(var(--muted-foreground))", strokeOpacity: 0.3 }}
                   content={
                     <ChartTooltipContent
-                      labelFormatter={(v) =>
-                        new Date(v as number).toLocaleString(undefined, {
+                      labelFormatter={(_, payload) => {
+                        // The X axis is a Date-scaled number, but formatted ticks
+                        // arrive here as strings — pull the raw `ts` off the
+                        // payload instead.
+                        const ts = (payload?.[0]?.payload as { ts?: number } | undefined)?.ts;
+                        if (typeof ts !== "number" || !Number.isFinite(ts)) return "";
+                        return new Date(ts).toLocaleString(undefined, {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
-                          hour: period === "1W" ? "2-digit" : undefined,
-                        })
-                      }
+                          ...(period === "1W"
+                            ? { hour: "2-digit", minute: "2-digit" }
+                            : {}),
+                        });
+                      }}
                       formatter={(v) => [fmt.money(Number(v)), " P&L"]}
                     />
                   }

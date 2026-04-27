@@ -65,8 +65,8 @@ export function PositionPie({ positions }: { positions: PositionLite[] }) {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_180px]">
-      <ChartContainer config={chartConfig} className="aspect-square max-h-[280px] w-full">
+    <div>
+      <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px] w-full">
         <ResponsiveContainer>
           <PieChart>
             <ChartTooltip
@@ -127,33 +127,6 @@ export function PositionPie({ positions }: { positions: PositionLite[] }) {
           </PieChart>
         </ResponsiveContainer>
       </ChartContainer>
-
-      {/* Legend list */}
-      <ul className="space-y-2 text-sm">
-        {data.map((d, i) => {
-          const pct = total ? (d.value / total) * 100 : 0;
-          return (
-            <li key={d.symbol} className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <span
-                  aria-hidden
-                  className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                  style={{ background: PALETTE[i % PALETTE.length] }}
-                />
-                <span className="truncate font-medium">{d.symbol}</span>
-              </div>
-              <div className="text-right">
-                <div className="font-mono text-xs tabular-nums text-foreground">
-                  {pct.toFixed(1)}%
-                </div>
-                <div className="font-mono text-[10px] tabular-nums text-muted-foreground">
-                  {fmt(d.value)}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
     </div>
   );
 }
