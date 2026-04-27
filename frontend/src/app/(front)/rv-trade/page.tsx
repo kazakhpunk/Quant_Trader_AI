@@ -48,9 +48,11 @@ export default async function RvUniversePage() {
         </div>
       </div>
 
-      {/* Two-column at lg+, stacked below. Map gets more vertical room. */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-2 border-border/60">
+      {/* Two-column at lg+, stacked below. 12-col grid gives roster 58% so
+          all four table columns (incl. Source) fit without truncating; map
+          still gets ample width on common 1280-1920px viewports. */}
+      <div className="grid gap-6 lg:grid-cols-12">
+        <Card className="lg:col-span-7 border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
               Roster
@@ -60,7 +62,7 @@ export default async function RvUniversePage() {
             <UniverseTable countries={universe} />
           </CardContent>
         </Card>
-        <Card className="lg:col-span-3 border-border/60">
+        <Card className="lg:col-span-5 border-border/60">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
               Behaviour map · PCA on series stats
