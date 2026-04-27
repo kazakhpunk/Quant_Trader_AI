@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { Gem } from "lucide-react";
+import { BrandLogo } from "@/components/brand-logo";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/hooks/use-store";
-import { Button } from "@/components/ui/button";
 import { Menu } from "@/components/admin-panel/menu";
 import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
 import { SidebarToggle } from "@/components/admin-panel/sidebar-toggle";
@@ -22,28 +21,28 @@ export function Sidebar() {
     >
       <SidebarToggle isOpen={sidebar?.isOpen} setIsOpen={sidebar?.setIsOpen} />
       <div className="relative h-full flex flex-col px-3 py-4 overflow-y-auto shadow-md dark:shadow-zinc-800">
-        <Button
+        <Link
+          href="/"
           className={cn(
-            "transition-transform ease-in-out duration-300 mb-1",
-            sidebar?.isOpen === false ? "translate-x-1" : "translate-x-0"
+            "my-1 flex items-center transition-[padding] duration-300 hover:opacity-85",
+            sidebar?.isOpen === false ? "justify-center" : "ml-3"
           )}
-          variant="link"
-          asChild
         >
-          <Link href="/" className="flex items-center gap-2">
-            <Gem className="w-6 h-6 mr-1" />
-            <h1
-              className={cn(
-                "font-bold text-lg whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",
-                sidebar?.isOpen === false
-                  ? "-translate-x-96 opacity-0 hidden"
-                  : "translate-x-0 opacity-100"
-              )}
-            >
-              Quant Trader AI
-            </h1>
-          </Link>
-        </Button>
+          <BrandLogo
+            className={cn("h-5 w-5", sidebar?.isOpen === false ? "" : "mr-2")}
+            size={20}
+          />
+          <span
+            className={cn(
+              "font-bold whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",
+              sidebar?.isOpen === false
+                ? "-translate-x-96 opacity-0 hidden"
+                : "translate-x-0 opacity-100"
+            )}
+          >
+            Quant Trader AI
+          </span>
+        </Link>
         <Menu isOpen={sidebar?.isOpen} />
       </div>
     </aside>

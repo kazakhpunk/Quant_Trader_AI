@@ -65,8 +65,8 @@ export function PositionPie({ positions }: { positions: PositionLite[] }) {
   }
 
   return (
-    <div>
-      <ChartContainer config={chartConfig} className="mx-auto aspect-square max-h-[300px] w-full">
+    <div className="grid gap-4 lg:grid-cols-[1fr_140px]">
+      <ChartContainer config={chartConfig} className="aspect-square max-h-[280px] w-full">
         <ResponsiveContainer>
           <PieChart>
             <ChartTooltip
@@ -127,6 +127,20 @@ export function PositionPie({ positions }: { positions: PositionLite[] }) {
           </PieChart>
         </ResponsiveContainer>
       </ChartContainer>
+
+      {/* Compact legend — colors + tickers only; values stay on hover */}
+      <ul className="flex flex-col gap-1.5 text-sm">
+        {data.map((d, i) => (
+          <li key={d.symbol} className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              style={{ background: PALETTE[i % PALETTE.length] }}
+            />
+            <span className="truncate">{d.symbol}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

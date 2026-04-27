@@ -19,8 +19,15 @@ import {
 import { Loader } from "@/components/v4/loader";
 import { cn } from "@/lib/utils";
 
-type Period = "1W" | "1M" | "3M" | "1A";
-const PERIODS: Period[] = ["1W", "1M", "3M", "1A"];
+type Period = "1W" | "1M" | "3M" | "1A" | "all";
+const PERIODS: Period[] = ["1W", "1M", "3M", "1A", "all"];
+const PERIOD_LABEL: Record<Period, string> = {
+  "1W": "1W",
+  "1M": "1M",
+  "3M": "3M",
+  "1A": "1Y",
+  all: "ALL",
+};
 
 const chartConfig = {
   pnl: { label: "Unrealized P&L", color: "hsl(var(--chart-1))" },
@@ -103,13 +110,24 @@ export function PnlChart() {
     : 0;
   const positive = finalPnl >= 0;
 
+  // The chart's PnL is "equity − base_value"; base_value = equity at the
+  // start of the selected window. Surfacing that date so users don't confuse
+  // this with the all-time unrealized P&L shown in the KPI strip.
+  const baseDate = series.length
+    ? new Date(series[0].ts).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+
   return (
     <div className="overflow-hidden rounded-lg border border-border/60">
       {/* header */}
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 bg-muted/20 px-5 py-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Unrealized P&amp;L
+            Unrealized P&amp;L{baseDate ? ` · since ${baseDate}` : ""}
           </p>
           <div className="mt-1 flex items-baseline gap-3">
             <span
@@ -149,7 +167,7 @@ export function PnlChart() {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {p}
+              {PERIOD_LABEL[p]}
             </button>
           ))}
         </div>
