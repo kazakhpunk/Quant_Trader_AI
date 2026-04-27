@@ -5,8 +5,16 @@ import {
   fetchPositions,
   fetchAccount,
   fetchPortfolioHistory,
+  fetchFilledBuysSince,
   PortfolioPeriod,
 } from './dash-service';
+import { fetchBarsSlice } from './bar-cache';
+
+const PERIOD_DAYS: Record<string, number> = {
+  '1W': 7, '1M': 30, '3M': 90, '1A': 365, all: 365 * 3,
+};
+
+const isoDay = (d: Date) => d.toISOString().slice(0, 10);
 
 export const getDashboardData = async (req: Request, res: Response) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -40,42 +48,151 @@ export const getPortfolioHistory = async (req: Request, res: Response) => {
   }
 };
 
-/** Account-level P&L over time. Backed by Alpaca's
- *  `/v2/account/portfolio/history` — the same endpoint the original
- *  dashboard chart used (commit ed7e95d) and the only OAuth-friendly
- *  source for P&L time-series. Unlike per-position MTM
- *  (close − avg_entry) × qty, this gives a natural upward equity curve
- *  when the account is making money: each day reflects real account
- *  equity, not a "what if I held current positions all along" simulation. */
-export const makeGetPositionsPnlHistory = (_db: Db) =>
+/** Per-position MTM unrealized P&L over time. Sums (close[d] − avg_entry) × qty
+ *  across all currently held positions per day. Rightmost bar converges to
+ *  the KPI strip's unrealized P&L number. The historical bars come from a
+ *  Mongo-persistent per-symbol cache that prefers Alpaca's data API
+ *  (with developer key + secret env vars) over Yahoo (which Railway egress
+ *  IPs frequently get blocked from). */
+export const makeGetPositionsPnlHistory = (db: Db) =>
   async (req: Request, res: Response) => {
     const token = req.headers.authorization?.split(' ')[1];
     const isLive = !!req.body.isLive;
-    const period = (req.body.period as PortfolioPeriod) || '1M';
+    const period = (req.body.period as string) || '1M';
     if (!token) return res.status(401).json({ error: 'Unauthorized' });
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 
     try {
-      const data = await fetchPortfolioHistory(token, isLive, period);
-      const ts = (data.timestamp ?? []) as number[];
-      const pnl = ((data.profit_loss ?? []) as number[]).map(
-        (v) => +Number(v).toFixed(2),
-      );
-      const base_value = +Number(data.base_value ?? 0).toFixed(2);
-      // Derive pct from pnl/base_value as a fraction (frontend multiplies
-      // by 100 for display). Alpaca's profit_loss_pct field is unreliable
-      // on paper accounts — sometimes returns 0 even with non-zero
-      // profit_loss — so we compute it ourselves so the % matches the $.
-      const pct = pnl.map((v) => (base_value > 0 ? v / base_value : 0));
+      const positionsRaw = await fetchPositions(token, isLive);
+      const positions = (positionsRaw ?? [])
+        .map((p: any) => ({
+          symbol: String(p.symbol),
+          qty: Number(p.qty),
+          avgEntryPrice: Number(p.avg_entry_price),
+        }))
+        .filter((p) => Number.isFinite(p.qty) && Number.isFinite(p.avgEntryPrice));
 
-      res.json({ timestamp: ts, pnl, pct, base_value });
-    } catch (error: any) {
-      console.error(
-        'Error fetching positions PnL history:',
-        error?.response?.data ?? error?.message,
+      if (!positions.length) {
+        return res.json({ timestamp: [], pnl: [], pct: [], base_value: 0 });
+      }
+
+      const days = PERIOD_DAYS[period] ?? 30;
+      const endDate = isoDay(new Date());
+      const startDate = isoDay(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
+
+      // Pull bars + actual open dates in parallel. The open date per
+      // symbol is the earliest filled BUY order; we use it to clip each
+      // position's chart contribution to $0 before that date. Without
+      // this clip the chart simulates owning the position even on dates
+      // before the user bought it — so a stock that was higher in the
+      // past inflates the early P&L and makes the curve look downward
+      // even when current unrealized P&L is positive.
+      const [positionData, filledBuys] = await Promise.all([
+        Promise.all(
+          positions.map(async (p) => {
+            try {
+              const bars = await fetchBarsSlice(p.symbol, startDate, endDate);
+              return { ...p, bars };
+            } catch (e: any) {
+              console.warn(`[pnl-history] bar fetch failed for ${p.symbol}:`, e?.message);
+              return { ...p, bars: [] as { date: string; close: number }[] };
+            }
+          }),
+        ),
+        // Look back ~3y so even old positions get their open date
+        // resolved. If the position was opened before this window, the
+        // clip is a no-op (open date < chart startDate).
+        fetchFilledBuysSince(
+          token,
+          isLive,
+          isoDay(new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000)),
+        ).catch((e) => {
+          console.warn('[pnl-history] filled-buys fetch failed:', e?.message);
+          return [] as any[];
+        }),
+      ]);
+
+      const openDateBySymbol = new Map<string, string>();
+      for (const o of filledBuys ?? []) {
+        if (String(o?.side ?? '').toLowerCase() !== 'buy') continue;
+        if (!o?.filled_at) continue;
+        const sym = String(o.symbol);
+        const filledAt = String(o.filled_at).slice(0, 10);
+        const existing = openDateBySymbol.get(sym);
+        if (!existing || filledAt < existing) openDateBySymbol.set(sym, filledAt);
+      }
+
+      console.log(
+        `[pnl-history] period=${period} positions=${positions.length} ` +
+        `with-bars=${positionData.filter(p => p.bars.length).length} ` +
+        `bars-per-symbol=${positionData.map(p => `${p.symbol}:${p.bars.length}`).join(',')}`,
       );
-      res
-        .status(500)
-        .json({ error: 'Failed to fetch positions P&L history' });
+
+      const dateSet = new Set<string>();
+      for (const p of positionData) for (const b of p.bars) dateSet.add(b.date);
+      const dates = Array.from(dateSet).sort();
+      if (!dates.length) {
+        return res.json({ timestamp: [], pnl: [], pct: [], base_value: 0 });
+      }
+
+      // Only positions that actually got bars contribute to the chart's pnl
+      // line — so the baseline must be computed over the same subset, or
+      // pct = pnl / baseline collapses to ~0% (small numerator, oversized
+      // denominator) and the chart looks like it's flat at zero.
+      const indexed = positionData
+        .filter((p) => p.bars.length > 0)
+        .map((p) => {
+          const byDate = new Map<string, number>();
+          for (const b of p.bars) byDate.set(b.date, b.close);
+          return {
+            ...p,
+            byDate,
+            sortedDs: Array.from(byDate.keys()).sort(),
+            openDate: openDateBySymbol.get(p.symbol),
+          };
+        });
+
+      // Cost basis is dollars-at-risk; |qty| keeps shorts (negative qty)
+      // from subtracting from longs and flipping the % sign relative to $.
+      const baseline = indexed.reduce(
+        (s, p) => s + Math.abs(p.avgEntryPrice * p.qty),
+        0,
+      );
+
+      const pnl = dates.map((date) => {
+        let total = 0;
+        for (const p of indexed) {
+          // Position can't contribute P&L before the user actually bought
+          // it — clip to $0 on dates earlier than the first filled buy.
+          if (p.openDate && date < p.openDate) continue;
+          let close = p.byDate.get(date);
+          if (close == null) {
+            for (let i = p.sortedDs.length - 1; i >= 0; i--) {
+              if (p.sortedDs[i] <= date) {
+                close = p.byDate.get(p.sortedDs[i]);
+                break;
+              }
+            }
+          }
+          if (close == null) continue;
+          // (close - entry) × qty — Alpaca's qty is negative for shorts so
+          // the sign comes out right naturally (short profits when price falls).
+          total += (close - p.avgEntryPrice) * p.qty;
+        }
+        return +total.toFixed(2);
+      });
+
+      res.json({
+        timestamp: dates.map((d) => Math.floor(new Date(d).getTime() / 1000)),
+        pnl,
+        // pct is a fraction (0.0092 = 0.92%). The frontend multiplies by
+        // 100 in pnl-chart.tsx — don't pre-multiply here or the display
+        // shows 100× the real percent (e.g. 1.8% → "180%").
+        pct: pnl.map((v) => (baseline > 0 ? v / baseline : 0)),
+        base_value: +baseline.toFixed(2),
+      });
+    } catch (error: any) {
+      console.error('Error fetching positions PnL history:', error?.response?.data ?? error?.message);
+      res.status(500).json({ error: 'Failed to fetch positions P&L history' });
     }
   };

@@ -16,6 +16,27 @@ export const fetchOrders = async (token: string, isLive: boolean) => {
   return response.data;
 };
 
+/** Filled buy orders from `after` onwards, ascending. Used to find the
+ *  earliest open date per held symbol so the P&L chart can clip pre-open
+ *  dates to $0 (a position can't contribute P&L before it existed). */
+export const fetchFilledBuysSince = async (
+  token: string,
+  isLive: boolean,
+  afterIsoDate: string,
+) => {
+  const response = await axios.get(`${getAlpacaApiUrl(isLive)}/orders`, {
+    headers: getAlpacaHeaders(token),
+    params: {
+      status: 'filled',
+      side: 'buy',
+      limit: 500,
+      direction: 'asc',
+      after: afterIsoDate,
+    },
+  });
+  return response.data;
+};
+
 export const fetchPositions = async (token: string, isLive: boolean) => {
   const response = await axios.get(`${getAlpacaApiUrl(isLive)}/positions`, {
     headers: getAlpacaHeaders(token),
