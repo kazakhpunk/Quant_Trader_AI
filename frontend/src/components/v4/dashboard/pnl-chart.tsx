@@ -30,16 +30,14 @@ const PERIOD_LABEL: Record<Period, string> = {
 };
 
 const chartConfig = {
-  pnl: { label: "Equity Δ", color: "hsl(var(--chart-1))" },
+  pnl: { label: "Unrealized P&L", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 interface HistoryPayload {
   timestamp: number[];
-  equity: number[];
-  profit_loss: number[];
-  profit_loss_pct: number[];
+  pnl: number[];
+  pct: number[];
   base_value: number;
-  timeframe: string;
 }
 
 const getApiUrl = () =>
@@ -52,7 +50,9 @@ async function fetchHistory(
   period: Period
 ): Promise<HistoryPayload | null> {
   try {
-    const r = await fetch(`${getApiUrl()}/api/v4/portfolio-history`, {
+    // Per-position MTM PnL series — converges to the KPI strip's
+    // unrealized P&L number on the rightmost bar.
+    const r = await fetch(`${getApiUrl()}/api/v4/positions-pnl-history`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -99,14 +99,13 @@ export function PnlChart() {
     if (!data?.timestamp?.length) return [];
     return data.timestamp.map((t, i) => ({
       ts: t * 1000,
-      pnl: data.profit_loss[i] ?? 0,
-      equity: data.equity[i] ?? 0,
+      pnl: data.pnl[i] ?? 0,
     }));
   }, [data]);
 
   const finalPnl = series.length ? series[series.length - 1].pnl : 0;
-  const periodPct = data?.profit_loss_pct?.length
-    ? data.profit_loss_pct[data.profit_loss_pct.length - 1] * 100
+  const periodPct = data?.pct?.length
+    ? data.pct[data.pct.length - 1] * 100
     : 0;
   const positive = finalPnl >= 0;
 
@@ -127,7 +126,7 @@ export function PnlChart() {
       <div className="flex flex-wrap items-end justify-between gap-3 border-b border-border/60 bg-muted/20 px-5 py-4">
         <div>
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-            Account equity Δ{baseDate ? ` · since ${baseDate}` : ""}
+            Unrealized P&amp;L{baseDate ? ` · since ${baseDate}` : ""}
           </p>
           <div className="mt-1 flex items-baseline gap-3">
             <span
@@ -155,7 +154,7 @@ export function PnlChart() {
             </span>
           </div>
           <p className="mt-1 text-[10px] text-muted-foreground">
-            Total account value change including cash; differs from the KPI&apos;s unrealized P&amp;L (open positions only).
+            Mark-to-market on currently held positions. Rightmost bar matches the KPI strip&apos;s P&amp;L.
           </p>
         </div>
         <div className="flex items-center rounded-md border border-border/70 bg-background p-0.5">
@@ -252,7 +251,7 @@ export function PnlChart() {
                             : {}),
                         });
                       }}
-                      formatter={(v) => [fmt.money(Number(v)), " Equity Δ"]}
+                      formatter={(v) => [fmt.money(Number(v)), " P&L"]}
                     />
                   }
                 />
