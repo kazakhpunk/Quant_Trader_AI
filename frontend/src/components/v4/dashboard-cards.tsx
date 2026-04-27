@@ -246,25 +246,15 @@ const Dashboard = () => {
     );
   }
 
-  const positions = (data.positions ?? []).filter(
-    (p) => safeNumber(p.unrealized_pl) > -0.02
-  );
-  const totalUnrealized = positions.reduce(
-    (sum, p) => sum + safeNumber(p.unrealized_pl),
+  // Show all open positions (no P&L filter).
+  const positions = data.positions ?? [];
+  // Sum of current market values across open positions = "what your
+  // positions are worth right now". Replaces the old Unrealized-P&L KPI
+  // since the P&L chart below already surfaces that number.
+  const totalPositionsValue = positions.reduce(
+    (sum, p) => sum + safeNumber(p.market_value),
     0
   );
-  // Cost basis = dollars-at-risk across all positions. Use |qty| because
-  // Alpaca returns negative qty for shorts; without abs(), a short's cost
-  // basis subtracts from longs' and the P&L % flips sign relative to the
-  // dollar amount (e.g. +$22 of P&L but -8% if a short dominates).
-  const totalCostBasis = positions.reduce(
-    (sum, p) =>
-      sum + Math.abs(safeNumber(p.avg_entry_price) * safeNumber(p.qty)),
-    0
-  );
-  const totalUnrealizedPct = totalCostBasis
-    ? (totalUnrealized / totalCostBasis) * 100
-    : 0;
   const orders = data.orders ?? [];
 
   return (
@@ -288,10 +278,9 @@ const Dashboard = () => {
             className="border-b border-border/60 md:border-b-0 md:border-r"
           />
           <Kpi
-            label="Unrealized P&L"
-            value={formatSignedCurrency(totalUnrealized)}
-            sub={formatPercent(totalUnrealizedPct)}
-            tone={totalUnrealized >= 0 ? "positive" : "negative"}
+            label="Positions value"
+            value={formatCurrency(totalPositionsValue)}
+            sub="market value · live"
             className="border-r border-border/60"
           />
           <Kpi
@@ -460,8 +449,8 @@ const Dashboard = () => {
                 <th className="hidden px-4 py-3 text-right font-medium md:table-cell">
                   Filled
                 </th>
-                <th className="px-4 py-3 text-right font-medium">Status</th>
-                <th className="w-16 px-4 py-3 text-right font-medium"></th>
+                <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="w-20 px-4 py-3 text-right font-medium"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
@@ -491,7 +480,7 @@ const Dashboard = () => {
                     <td className="hidden px-4 py-3 text-right font-mono tabular-nums md:table-cell">
                       {o.filled_qty}
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-left">
                       <StatusBadge status={o.status} />
                     </td>
                     <td className="px-4 py-3 text-right">

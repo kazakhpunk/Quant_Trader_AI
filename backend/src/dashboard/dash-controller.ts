@@ -99,13 +99,14 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
             }
           }),
         ),
-        // Look back ~3y so even old positions get their open date
-        // resolved. If the position was opened before this window, the
-        // clip is a no-op (open date < chart startDate).
+        // Look back 10y + paginate so even ancient positions get their
+        // open date resolved. Without enough lookback some symbols (e.g.
+        // AMD held since 2020) miss the cutoff and end up un-clipped,
+        // dominating the chart with simulated past P&L.
         fetchFilledBuysSince(
           token,
           isLive,
-          isoDay(new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000)),
+          isoDay(new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000)),
         ).catch((e) => {
           console.warn('[pnl-history] filled-buys fetch failed:', e?.message);
           return [] as any[];
@@ -113,7 +114,8 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
       ]);
 
       const openDateBySymbol = new Map<string, string>();
-      for (const o of filledBuys ?? []) {
+      const filledBuysArr: any[] = Array.isArray(filledBuys) ? filledBuys : [];
+      for (const o of filledBuysArr) {
         if (String(o?.side ?? '').toLowerCase() !== 'buy') continue;
         if (!o?.filled_at) continue;
         const sym = String(o.symbol);
@@ -121,12 +123,20 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
         const existing = openDateBySymbol.get(sym);
         if (!existing || filledAt < existing) openDateBySymbol.set(sym, filledAt);
       }
-
-      console.log(
-        `[pnl-history] period=${period} positions=${positions.length} ` +
-        `with-bars=${positionData.filter(p => p.bars.length).length} ` +
-        `bars-per-symbol=${positionData.map(p => `${p.symbol}:${p.bars.length}`).join(',')}`,
-      );
+      // Held positions whose buy order we couldn't find — most commonly a
+      // very-recent buy that hasn't propagated through /v2/orders yet
+      // (e.g. user just bought AMD and Alpaca's order list lags by a few
+      // minutes). Default openDate = today so the symbol contributes $0
+      // to every past date and only shows its tiny live MTM at the right
+      // edge. Better to under-include a recent buy than over-include a
+      // mystery symbol's multi-year price history (which would dominate
+      // the chart with simulated past P&L from when the stock was high).
+      const heldSymbols = positions.map((p) => p.symbol);
+      const missingOpenDate = heldSymbols.filter((s) => !openDateBySymbol.has(s));
+      if (missingOpenDate.length) {
+        const today = isoDay(new Date());
+        for (const s of missingOpenDate) openDateBySymbol.set(s, today);
+      }
 
       const dateSet = new Set<string>();
       for (const p of positionData) for (const b of p.bars) dateSet.add(b.date);
