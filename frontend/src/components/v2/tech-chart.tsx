@@ -1,5 +1,6 @@
 "use client";
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Area,
   AreaChart,
@@ -66,7 +67,12 @@ const chartConfig = {
 
 export default function TechnicalCharts() {
   const [timeRange, setTimeRange] = React.useState("30d");
-  const [selectedTicker, setSelectedTicker] = React.useState<string>("AAPL");
+  // Honor a ?ticker=… query param on first render so deep-links from the
+  // ratings page land on the right ticker.
+  const params = useSearchParams();
+  const [selectedTicker, setSelectedTicker] = React.useState<string>(
+    () => params?.get("ticker")?.toUpperCase() || "AAPL",
+  );
   const [smaData, setSmaData] = React.useState<any[]>([]);
   const [emaData, setEmaData] = React.useState<any[]>([]);
   const [rsiData, setRsiData] = React.useState<any[]>([]);

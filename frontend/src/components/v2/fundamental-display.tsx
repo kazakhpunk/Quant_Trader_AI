@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSearchParams } from "next/navigation";
 import { Combobox } from "./combobox";
 import { getApiUrl, cn } from "@/lib/utils";
 import { Button } from "../ui/button";
@@ -371,7 +372,12 @@ export default function FundamentalAnalysis() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const openDrawer = useOrderDrawer((s) => s.open);
-  const [selectedTicker, setSelectedTicker] = React.useState<string>("AAPL");
+  // Honor a ?ticker=… query param on first render so deep-links from the
+  // ratings page land on the right ticker.
+  const params = useSearchParams();
+  const [selectedTicker, setSelectedTicker] = React.useState<string>(
+    () => params?.get("ticker")?.toUpperCase() || "AAPL",
+  );
   const [analysisData, setAnalysisData] = React.useState<any>(null);
 
   const fetchFundData = async (ticker: string) => {

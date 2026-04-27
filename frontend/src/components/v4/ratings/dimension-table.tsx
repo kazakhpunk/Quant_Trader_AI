@@ -1,9 +1,22 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { RatingRow, Dimension } from "@/lib/api/ratings";
 import { useOrderDrawer } from "@/lib/order-drawer-store";
 import { cn } from "@/lib/utils";
 import { useRatingsHighlight } from "./use-ratings-highlight";
+
+// Dimension → matching deep-dive analysis page. Clicking the *ticker text*
+// inside a per-dimension table sends the user to that page with the ticker
+// preselected. Clicking elsewhere on the row keeps the original behavior:
+// open the buy/sell drawer.
+const DIMENSION_ROUTES: Record<Dimension, string> = {
+  technical: "/analysis/technical",
+  fundamental: "/analysis/fundamental",
+  sentiment: "/analysis/sentiment",
+  price: "/analysis/price",
+  volatility: "/analysis/volatility",
+};
 
 type Col<T> = { key: string; label: string; get: (r: RatingRow) => T; format?: (v: T) => string };
 
@@ -46,6 +59,7 @@ export const DIMENSION_COLUMNS: Record<Dimension, Col<any>[]> = {
 export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows: RatingRow[] }) {
   const open = useOrderDrawer((s) => s.open);
   const pulseTicker = useRatingsHighlight(dimension);
+  const route = DIMENSION_ROUTES[dimension];
   const [sort, setSort] = useState<{ k: string; dir: "asc" | "desc" }>({
     k: "score", dir: "desc",
   });
@@ -100,7 +114,16 @@ export function DimensionTable({ dimension, rows }: { dimension: Dimension; rows
                 )}
                 onClick={() => open(r.ticker)}
               >
-                <td className="px-4 py-3 font-medium">{r.ticker}</td>
+                <td className="px-4 py-3 font-medium">
+                  <Link
+                    href={`${route}?ticker=${encodeURIComponent(r.ticker)}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="underline-offset-4 transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:underline"
+                    title={`Open ${dimension} analysis for ${r.ticker}`}
+                  >
+                    {r.ticker}
+                  </Link>
+                </td>
                 <td className={cn("px-4 py-3 text-right font-mono tabular-nums", scoreClass(r.scores[dimension]))}>
                   {Math.round(r.scores[dimension])}
                 </td>

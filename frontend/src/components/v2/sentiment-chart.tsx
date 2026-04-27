@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { TrendingUp } from "lucide-react";
 import {
   Bar,
@@ -47,7 +48,12 @@ const truncateText = (text: string, maxWords: number) => {
 };
 
 export function SentimentChart() {
-  const [selectedTicker, setSelectedTicker] = useState<string>("AAPL");
+  // Honor a ?ticker=… query param on first render so deep-links from the
+  // ratings page land on the right ticker without an extra click.
+  const params = useSearchParams();
+  const [selectedTicker, setSelectedTicker] = useState<string>(
+    () => params?.get("ticker")?.toUpperCase() || "AAPL",
+  );
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
