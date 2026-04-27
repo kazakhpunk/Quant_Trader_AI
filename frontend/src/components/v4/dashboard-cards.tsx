@@ -125,6 +125,20 @@ const Dashboard = () => {
 
   const { confirm, dialog: confirmDialog, close: closeConfirm } = useConfirm();
 
+  // Optimistic mutations — Alpaca's cancel/liquidate go through pending
+  // states (pending_cancel, the close's market-sell sitting in the order
+  // book until it fills), so a refresh right after the API call still
+  // returns the row. Drop the row from local state immediately, then
+  // background-refresh to catch backend errors and reconcile.
+  const removePositionLocally = (symbol: string) =>
+    setData((prev) =>
+      prev ? { ...prev, positions: prev.positions.filter((p) => p.symbol !== symbol) } : prev,
+    );
+  const removeOrderLocally = (orderId: string) =>
+    setData((prev) =>
+      prev ? { ...prev, orders: prev.orders.filter((o) => o.id !== orderId) } : prev,
+    );
+
   const handleClosePosition = async (symbol: string) => {
     if (!email) return;
     const ok = await confirm({
@@ -142,10 +156,15 @@ const Dashboard = () => {
     });
     if (!ok) return;
     setBusyId(`pos:${symbol}`);
+    // Optimistic: drop the row immediately so the UI feels responsive
+    removePositionLocally(symbol);
     const r = await closePosition(email, false, symbol);
     setBusyId(null);
     closeConfirm();
-    if (!r.ok) alert(r.error || `Failed to close ${symbol}`);
+    if (!r.ok) {
+      alert(r.error || `Failed to close ${symbol}`);
+    }
+    // Background refresh to reconcile with Alpaca's actual state
     await refresh();
   };
 
@@ -166,10 +185,13 @@ const Dashboard = () => {
     });
     if (!ok) return;
     setBusyId(`ord:${orderId}`);
+    removeOrderLocally(orderId);
     const r = await cancelOrder(email, false, orderId);
     setBusyId(null);
     closeConfirm();
-    if (!r.ok) alert(r.error || `Failed to cancel order`);
+    if (!r.ok) {
+      alert(r.error || `Failed to cancel order`);
+    }
     await refresh();
   };
 
