@@ -21,6 +21,7 @@ export const createRvRouter = (db: Db): Router => {
   router.post('/rv/signals/refresh', ctl.getSignals);
   router.post('/rv/backtests',   ctl.postBacktest);
   router.get('/rv/backtests',    ctl.listBacktests);
-  router.get('/rv/backtests/:id', ctl.getBacktest);
+  router.get('/rv/backtests/:id',    ctl.getBacktest);
+  router.delete('/rv/backtests/:id', ctl.deleteBacktest);
   return router;
 };

@@ -11,6 +11,8 @@ import { RunsHistoryTable } from "@/components/v4/rv-trade/runs-history-table";
 import { rvApi, BacktestConfigDto, BacktestRunDto } from "@/lib/api/rv";
 import { Loader } from "@/components/v4/loader";
 import { BacktestInfoDialog } from "@/components/v4/rv-trade/info-dialogs";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 
 const DEFAULT_CONFIG: BacktestConfigDto = {
   rules: { entryZ: 2.0, exitZ: 0.5, stopZ: 3.5, maxHoldingDays: 60, costBpsRoundTrip: 30, sizing: "equalWeight" },
@@ -86,6 +88,19 @@ export default function RvBacktestPage() {
             </Card>
           )}
           {run && <>
+            <div className="flex items-center justify-between gap-3">
+              <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                Showing run · {run._id?.slice(0, 8)}
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => setRun(null)}
+                className="h-7 gap-1.5 rounded-md border-border/70 bg-background px-2.5 text-[11px] font-medium uppercase tracking-wider text-foreground shadow-sm transition hover:bg-muted/40"
+              >
+                <X className="h-3.5 w-3.5" />
+                Back to history
+              </Button>
+            </div>
             <MetricsCard metrics={run.metrics} />
             <Card className="border-border/60">
               <CardHeader className="pb-3">
@@ -110,7 +125,17 @@ export default function RvBacktestPage() {
                 History
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-0"><RunsHistoryTable runs={history} /></CardContent>
+            <CardContent className="p-0">
+              <RunsHistoryTable
+                runs={history}
+                currentRunId={run?._id}
+                onClearCurrent={() => setRun(null)}
+                onDeleted={(id) => {
+                  setHistory((prev) => prev.filter((r) => r._id !== id));
+                  if (run?._id === id) setRun(null);
+                }}
+              />
+            </CardContent>
           </Card>
         </div>
       </div>

@@ -34,6 +34,12 @@ export class RvStore {
     return { _id: _id.toHexString(), ...rest } as BacktestRun;
   }
 
+  async deleteRun(id: string): Promise<boolean> {
+    if (!ObjectId.isValid(id)) return false;
+    const res = await this.db.collection('rv_backtest_runs').deleteOne({ _id: new ObjectId(id) });
+    return res.deletedCount === 1;
+  }
+
   async listRuns(userEmail: string, limit = 20): Promise<BacktestRun[]> {
     const docs = await this.db.collection('rv_backtest_runs')
       .find({ userEmail })

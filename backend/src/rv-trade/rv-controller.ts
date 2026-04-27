@@ -147,6 +147,12 @@ export class RvController {
     if (!run) { res.status(404).json({ error: 'not found' }); return; }
     res.json({ run });
   };
+
+  deleteBacktest = async (req: Request, res: Response) => {
+    const ok = await this.store.deleteRun(req.params.id);
+    if (!ok) { res.status(404).json({ error: 'not found' }); return; }
+    res.json({ ok: true });
+  };
 }
 
 function parseBacktestConfig(body: any): BacktestConfig | { error: string } {

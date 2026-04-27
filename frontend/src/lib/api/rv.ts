@@ -98,4 +98,6 @@ export const rvApi = {
     }),
   listBacktests: () => http<{ runs: BacktestRunDto[] }>(`${API_BASE}/api/v4/rv/backtests`),
   getBacktest: (id: string) => http<{ run: BacktestRunDto }>(`${API_BASE}/api/v4/rv/backtests/${id}`),
+  deleteBacktest: (id: string) =>
+    http<{ ok: true }>(`${API_BASE}/api/v4/rv/backtests/${id}`, { method: "DELETE" }),
 };
