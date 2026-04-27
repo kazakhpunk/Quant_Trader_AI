@@ -2,12 +2,19 @@ import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { PairTable } from "@/components/v4/rv-trade/pair-table";
 import { Card, CardContent } from "@/components/ui/card";
 import { PairsInfoDialog } from "@/components/v4/rv-trade/info-dialogs";
+import { getApiUrl } from "@/lib/utils";
 
-async function fetchPairs() {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-  const res = await fetch(`${base}/api/v4/rv/pairs`, { cache: "no-store" });
-  if (!res.ok) return { pairs: [], config: null };
-  return res.json();
+async function fetchPairs(): Promise<{ pairs: any[]; config: any }> {
+  const base = getApiUrl();
+  if (!base) return { pairs: [], config: null };
+  try {
+    const res = await fetch(`${base}/api/v4/rv/pairs`, { cache: "no-store" });
+    if (!res.ok) return { pairs: [], config: null };
+    return res.json();
+  } catch (e) {
+    console.error("[rv-trade] pairs fetch failed:", (e as Error).message);
+    return { pairs: [], config: null };
+  }
 }
 
 export default async function RvPairsPage() {

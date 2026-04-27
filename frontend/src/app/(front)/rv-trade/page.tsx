@@ -2,12 +2,23 @@ import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { UniverseTable } from "@/components/v4/rv-trade/universe-table";
 import { UniverseMap } from "@/components/v4/rv-trade/universe-map";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getApiUrl } from "@/lib/utils";
 
-async function fetchUniverse() {
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-  const res = await fetch(`${base}/api/v4/rv/universe`, { cache: "no-store" });
-  if (!res.ok) return { universe: [] };
-  return res.json();
+// SSR fetch wrapped in try/catch so the page renders even if the backend
+// is briefly unreachable — otherwise the whole route returns 500. Uses
+// getApiUrl() (NEXT_PUBLIC_DEPLOY in prod, NEXT_PUBLIC_LOCAL in dev) to
+// stay consistent with every other API call in the app.
+async function fetchUniverse(): Promise<{ universe: any[] }> {
+  const base = getApiUrl();
+  if (!base) return { universe: [] };
+  try {
+    const res = await fetch(`${base}/api/v4/rv/universe`, { cache: "no-store" });
+    if (!res.ok) return { universe: [] };
+    return res.json();
+  } catch (e) {
+    console.error("[rv-trade] universe fetch failed:", (e as Error).message);
+    return { universe: [] };
+  }
 }
 
 export default async function RvUniversePage() {

@@ -1,4 +1,10 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000';
+import { getApiUrl } from '@/lib/utils';
+
+// Stay aligned with the rest of the app's API base — uses NEXT_PUBLIC_DEPLOY
+// in production and NEXT_PUBLIC_LOCAL in development. Falling back to a
+// hardcoded localhost broke production SSR (Vercel functions tried to
+// connect to 127.0.0.1:8000 and got ECONNREFUSED).
+const API_BASE = getApiUrl() || '';
 
 export type AssetSource = 'fred' | 'yahoo';
 export type AssetCategory = 'overall' | 'region' | 'rating' | 'grade' | 'sector' | 'etf';
