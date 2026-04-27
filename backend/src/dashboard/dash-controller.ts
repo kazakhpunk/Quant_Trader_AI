@@ -58,17 +58,19 @@ export const makeGetPositionsPnlHistory = (_db: Db) =>
       const data = await fetchPortfolioHistory(token, isLive, period);
 
       // Alpaca returns parallel arrays. profit_loss is in dollars,
-      // profit_loss_pct is a fraction (0.01 = 1%). The frontend
-      // displays pct with a '%' suffix as-is, so multiply by 100 here so
-      // 0.01 renders as "1.00%" instead of "0.01%".
+      // profit_loss_pct is supposed to be a fraction (0.01 = 1%) — but on
+      // paper accounts Alpaca often returns 0s for profit_loss_pct even
+      // when profit_loss is non-zero. Derive pct from pnl/base_value so
+      // the sign and magnitude always agree with the dollar number.
+      // *100 since the frontend appends '%' to the raw value.
       const ts = (data.timestamp ?? []) as number[];
       const pnl = ((data.profit_loss ?? []) as number[]).map(
         (v) => +Number(v).toFixed(2),
       );
-      const pct = ((data.profit_loss_pct ?? []) as number[]).map(
-        (v) => +(Number(v) * 100).toFixed(4),
-      );
       const base_value = +Number(data.base_value ?? 0).toFixed(2);
+      const pct = pnl.map((v) =>
+        base_value > 0 ? +((v / base_value) * 100).toFixed(4) : 0,
+      );
 
       res.json({ timestamp: ts, pnl, pct, base_value });
     } catch (error: any) {

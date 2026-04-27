@@ -253,10 +253,13 @@ const Dashboard = () => {
     (sum, p) => sum + safeNumber(p.unrealized_pl),
     0
   );
-  // Cost basis = sum(qty * entry price). P&L % is gain relative to what you
-  // paid, not relative to the current market value of the position.
+  // Cost basis = dollars-at-risk across all positions. Use |qty| because
+  // Alpaca returns negative qty for shorts; without abs(), a short's cost
+  // basis subtracts from longs' and the P&L % flips sign relative to the
+  // dollar amount (e.g. +$22 of P&L but -8% if a short dominates).
   const totalCostBasis = positions.reduce(
-    (sum, p) => sum + safeNumber(p.avg_entry_price) * safeNumber(p.qty),
+    (sum, p) =>
+      sum + Math.abs(safeNumber(p.avg_entry_price) * safeNumber(p.qty)),
     0
   );
   const totalUnrealizedPct = totalCostBasis
@@ -369,8 +372,11 @@ const Dashboard = () => {
                 positions.map((p) => {
                   const mv = safeNumber(p.market_value);
                   const pl = safeNumber(p.unrealized_pl);
+                  // |qty| so shorts (negative qty) report cost basis as a
+                  // positive dollars-at-risk number, otherwise the % comes
+                  // out sign-flipped from the dollar P&L.
                   const cost =
-                    safeNumber(p.avg_entry_price) * safeNumber(p.qty);
+                    Math.abs(safeNumber(p.avg_entry_price) * safeNumber(p.qty));
                   const pct = cost ? (pl / cost) * 100 : 0;
                   const positive = pl >= 0;
                   return (
