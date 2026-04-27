@@ -7,7 +7,7 @@ import {
   fetchPortfolioHistory,
   PortfolioPeriod,
 } from './dash-service';
-import { getCachedDailyBars } from './bar-cache';
+import { fetchBarsSlice } from './bar-cache';
 
 const PERIOD_DAYS: Record<string, number> = {
   '1W': 7, '1M': 30, '3M': 90, '1A': 365, all: 365 * 3,
@@ -79,15 +79,26 @@ export const makeGetPositionsPnlHistory = (db: Db) =>
       const endDate = isoDay(new Date());
       const startDate = isoDay(new Date(Date.now() - days * 24 * 60 * 60 * 1000));
 
+      // Direct fetch (Alpaca → Yahoo fallback) per request. Bypasses the
+      // Mongo bar-cache which was returning stale partial data — every
+      // period was resolving to the same handful of cached bars and the
+      // chart looked frozen across period switches.
       const positionData = await Promise.all(
         positions.map(async (p) => {
           try {
-            const bars = await getCachedDailyBars(db, p.symbol, startDate, endDate);
+            const bars = await fetchBarsSlice(p.symbol, startDate, endDate);
             return { ...p, bars };
-          } catch {
+          } catch (e: any) {
+            console.warn(`[pnl-history] bar fetch failed for ${p.symbol}:`, e?.message);
             return { ...p, bars: [] as { date: string; close: number }[] };
           }
         })
+      );
+
+      console.log(
+        `[pnl-history] period=${period} positions=${positions.length} ` +
+        `with-bars=${positionData.filter(p => p.bars.length).length} ` +
+        `bars-per-symbol=${positionData.map(p => `${p.symbol}:${p.bars.length}`).join(',')}`,
       );
 
       const dateSet = new Set<string>();

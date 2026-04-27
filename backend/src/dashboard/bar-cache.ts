@@ -113,7 +113,7 @@ async function fetchAlpacaSlice(
 /** Try Alpaca's data API first (reliable from Railway, requires developer
  *  key+secret env vars), fall back to Yahoo (works locally / if Alpaca env
  *  vars aren't configured). */
-async function fetchBarsSlice(
+export async function fetchBarsSlice(
   symbol: string,
   startDate: string,
   endDate: string,
