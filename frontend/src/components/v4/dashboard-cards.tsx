@@ -12,6 +12,7 @@ import { PnlChart } from "@/components/v4/dashboard/pnl-chart";
 import { PositionPie } from "@/components/v4/dashboard/position-pie";
 import { closePosition, cancelOrder } from "@/lib/api/orders";
 import { X } from "lucide-react";
+import { useConfirm } from "@/components/v4/confirm-dialog";
 
 interface AccountData {
   portfolio_value: number;
@@ -121,23 +122,53 @@ const Dashboard = () => {
     loadData();
   }, []);
 
+  const { confirm, dialog: confirmDialog, close: closeConfirm } = useConfirm();
+
   const handleClosePosition = async (symbol: string) => {
     if (!email) return;
-    if (!confirm(`Close ${symbol} at market? This sells the entire position.`)) return;
+    const ok = await confirm({
+      title: `Close ${symbol} at market?`,
+      description: (
+        <>
+          Sells the entire {symbol} position via Alpaca market order.
+          <span className="mt-2 block font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            This is irreversible. Any related open orders are cancelled too.
+          </span>
+        </>
+      ),
+      confirmLabel: "Close position",
+      intent: "destructive",
+    });
+    if (!ok) return;
     setBusyId(`pos:${symbol}`);
     const r = await closePosition(email, false, symbol);
-    if (!r.ok) alert(r.error || `Failed to close ${symbol}`);
     setBusyId(null);
+    closeConfirm();
+    if (!r.ok) alert(r.error || `Failed to close ${symbol}`);
     await refresh();
   };
 
   const handleCancelOrder = async (orderId: string, symbol: string) => {
     if (!email) return;
-    if (!confirm(`Cancel open order on ${symbol}?`)) return;
+    const ok = await confirm({
+      title: `Cancel open order on ${symbol}?`,
+      description: (
+        <>
+          The order is removed from the book before it can fill.
+          <span className="mt-1 block font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+            Already-filled portions stay on your account.
+          </span>
+        </>
+      ),
+      confirmLabel: "Cancel order",
+      intent: "destructive",
+    });
+    if (!ok) return;
     setBusyId(`ord:${orderId}`);
     const r = await cancelOrder(email, false, orderId);
-    if (!r.ok) alert(r.error || `Failed to cancel order`);
     setBusyId(null);
+    closeConfirm();
+    if (!r.ok) alert(r.error || `Failed to cancel order`);
     await refresh();
   };
 
@@ -433,6 +464,8 @@ const Dashboard = () => {
           </table>
         </div>
       </section>
+
+      {confirmDialog}
     </div>
   );
 };
