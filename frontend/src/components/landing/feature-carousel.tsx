@@ -139,40 +139,6 @@ function HorizontalTrack() {
 
     let raf = 0;
     let pending = false;
-    let snapTimer = 0;
-    let snapping = false;
-    let snapRaf = 0;
-    const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    // Custom rAF tween — gives a soft ease-in-out across the full motion.
-    // Native `behavior: 'smooth'` on most browsers eases out only, which
-    // reads as "paused, then snatched". This keeps acceleration symmetrical
-    // and scales duration with distance so tiny corrections don't drag and
-    // big jumps don't feel rushed.
-    const easeInOutCubic = (t: number) =>
-      t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    const tweenScrollTo = (targetY: number) => {
-      cancelAnimationFrame(snapRaf);
-      const startY = window.scrollY;
-      const dist = targetY - startY;
-      if (Math.abs(dist) < 1) return;
-      const duration = Math.min(900, Math.max(420, 360 + Math.abs(dist) * 0.55));
-      const t0 = performance.now();
-      const step = (now: number) => {
-        if (!snapping) return; // cancelled by user gesture
-        const t = Math.min(1, (now - t0) / duration);
-        const eased = easeInOutCubic(t);
-        window.scrollTo(0, startY + dist * eased);
-        if (t < 1) {
-          snapRaf = requestAnimationFrame(step);
-        } else {
-          snapping = false;
-        }
-      };
-      snapping = true;
-      snapRaf = requestAnimationFrame(step);
-    };
 
     const update = () => {
       const rect = outer.getBoundingClientRect();
@@ -193,34 +159,6 @@ function HorizontalTrack() {
       setActive((prev) => (prev === next ? prev : next));
     };
 
-    // After the user stops scrolling, gently nudge the page scroll so the
-    // nearest panel ends up centered. Behaves like CSS scroll-snap with
-    // proximity but works for our scroll-linked transform.
-    const scheduleSnap = () => {
-      if (prefersReduced) return;
-      window.clearTimeout(snapTimer);
-      snapTimer = window.setTimeout(() => {
-        const rect = outer.getBoundingClientRect();
-        // Only snap while the section is actually pinned. Outside this band
-        // the user is entering or leaving the carousel — don't hijack them.
-        const PIN_TOL = 8;
-        if (rect.top > -PIN_TOL || rect.bottom < window.innerHeight + PIN_TOL) return;
-
-        const totalScroll = Math.max(1, rect.height - window.innerHeight);
-        const scrolled = -rect.top;
-        const progress = Math.max(0, Math.min(1, scrolled / totalScroll));
-        const stops = PANEL_COUNT - 1;
-        const targetIdx = Math.round(progress * stops);
-        const targetProgress = targetIdx / stops;
-        const targetScrolled = targetProgress * totalScroll;
-        const delta = targetScrolled - scrolled;
-
-        // Already on the snap point — nothing to do.
-        if (Math.abs(delta) < 2) return;
-        tweenScrollTo(window.scrollY + delta);
-      }, 110);
-    };
-
     const onScroll = () => {
       if (pending) return;
       pending = true;
@@ -228,32 +166,15 @@ function HorizontalTrack() {
         update();
         pending = false;
       });
-      if (!snapping) scheduleSnap();
-    };
-
-    // Any deliberate input from the user cancels an in-flight snap so we
-    // never fight against an active gesture.
-    const cancelSnap = () => {
-      window.clearTimeout(snapTimer);
-      cancelAnimationFrame(snapRaf);
-      snapping = false;
     };
 
     update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
-    window.addEventListener("wheel", cancelSnap, { passive: true });
-    window.addEventListener("touchstart", cancelSnap, { passive: true });
-    window.addEventListener("keydown", cancelSnap);
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
-      window.removeEventListener("wheel", cancelSnap);
-      window.removeEventListener("touchstart", cancelSnap);
-      window.removeEventListener("keydown", cancelSnap);
       cancelAnimationFrame(raf);
-      cancelAnimationFrame(snapRaf);
-      window.clearTimeout(snapTimer);
     };
   }, []);
 
@@ -282,13 +203,8 @@ function HorizontalTrack() {
             className="flex h-full will-change-transform"
             style={{ width: `${PANEL_COUNT * 100}vw` }}
           >
-            {PANELS.map((p, i) => (
-              <FeaturePanel
-                key={p.index}
-                data={p}
-                variant="horizontal"
-                active={i === active}
-              />
+            {PANELS.map((p) => (
+              <FeaturePanel key={p.index} data={p} variant="horizontal" />
             ))}
           </div>
         </div>
