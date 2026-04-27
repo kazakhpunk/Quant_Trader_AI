@@ -158,12 +158,18 @@ export class RvController {
 function parseBacktestConfig(body: any): BacktestConfig | { error: string } {
   if (!body || typeof body !== 'object') return { error: 'body required' };
   const r = body.rules || {};
+  // Defaults tuned for liquid EM ETF / OAS index pairs:
+  //   entry 2.5  — be selective, wait for real dislocations
+  //   exit 0.5   — close once z crosses back through ~0
+  //   stop 3.5   — bail when residual blows out
+  //   90 days    — give mean reversion room (half-life ≤ 40 d, 2× buffer)
+  //   8 bps      — realistic round-trip for ETF pairs (was 30 bps which dominated PnL)
   const rules: TradingRules = {
-    entryZ: numOr(r.entryZ, 2.0),
+    entryZ: numOr(r.entryZ, 2.5),
     exitZ: numOr(r.exitZ, 0.5),
     stopZ: numOr(r.stopZ, 3.5),
-    maxHoldingDays: Math.max(5, Math.floor(numOr(r.maxHoldingDays, 60))),
-    costBpsRoundTrip: Math.max(0, numOr(r.costBpsRoundTrip, 30)),
+    maxHoldingDays: Math.max(5, Math.floor(numOr(r.maxHoldingDays, 90))),
+    costBpsRoundTrip: Math.max(0, numOr(r.costBpsRoundTrip, 8)),
     sizing: r.sizing === 'inverseVol' ? 'inverseVol' : 'equalWeight',
   };
   return {

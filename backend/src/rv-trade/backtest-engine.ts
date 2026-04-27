@@ -96,11 +96,18 @@ export function runBacktest(input: BacktestInput): BacktestRun {
       const mu = ss.mean(window), sigma = Math.max(ss.standardDeviation(window), 1e-9);
       const z = (k.resid[k.resid.length - 1] - mu) / sigma;
       const oasA = ySlice[ySlice.length - 1], oasB = xSlice[xSlice.length - 1];
-      // higher OAS = "cheap" = long leg
-      const longIso = oasA >= oasB ? p.a.iso : p.b.iso;
-      const shortIso = longIso === p.a.iso ? p.b.iso : p.a.iso;
-      const oasLong = longIso === p.a.iso ? oasA : oasB;
-      const oasShort = longIso === p.a.iso ? oasB : oasA;
+      // Position based on residual sign for mean-reversion:
+      //   z > 0  → residual y - β·x is too high → expect y to fall vs β·x
+      //            → LONG y (profit if y tightens), SHORT x (profit if x widens)
+      //   z ≤ 0  → opposite
+      // Earlier code keyed direction off "which leg has higher OAS today",
+      // which gives a fixed long-the-higher-leg bias and produces the wrong
+      // direction on every z<0 entry.
+      const aIsLong = z >= 0;
+      const longIso  = aIsLong ? p.a.iso : p.b.iso;
+      const shortIso = aIsLong ? p.b.iso : p.a.iso;
+      const oasLong  = aIsLong ? oasA : oasB;
+      const oasShort = aIsLong ? oasB : oasA;
       todaySignals.set(`${p.a.iso}-${p.b.iso}`, {
         z, longIso, shortIso, beta: k.beta[k.beta.length - 1], oasLong, oasShort,
       });
