@@ -27,6 +27,9 @@ type Dim = {
   plain: string;
   terms: { term: string; meaning: string }[];
   icon: React.ComponentType<{ className?: string }>;
+  /** Whether this dimension contributes to the composite score. False for
+   *  Price and Volatility — they're shown as context but excluded. */
+  inComposite: boolean;
 };
 
 const DIMENSIONS: Dim[] = [
@@ -44,6 +47,7 @@ const DIMENSIONS: Dim[] = [
       { term: "EMA20 / EMA50", meaning: "Exponential moving averages — same idea but weights recent prices more." },
     ],
     icon: Activity,
+    inComposite: true,
   },
   {
     n: "02",
@@ -61,6 +65,7 @@ const DIMENSIONS: Dim[] = [
       { term: "Payout", meaning: "Share of earnings paid out as dividend. >100% = unsustainable." },
     ],
     icon: Building2,
+    inComposite: true,
   },
   {
     n: "03",
@@ -75,6 +80,7 @@ const DIMENSIONS: Dim[] = [
       { term: "Articles", meaning: "Number of headlines that fed the score. Higher = more confidence in the signal." },
     ],
     icon: MessageSquareText,
+    inComposite: true,
   },
   {
     n: "04",
@@ -90,6 +96,7 @@ const DIMENSIONS: Dim[] = [
       { term: "30d %", meaning: "30-day percent change — the medium-term trend signal driving the score." },
     ],
     icon: TrendingUp,
+    inComposite: false,
   },
   {
     n: "05",
@@ -104,6 +111,7 @@ const DIMENSIONS: Dim[] = [
       { term: "ATR-14", meaning: "Average True Range over 14 bars — the typical dollar swing per day. Used for stop-width." },
     ],
     icon: Waves,
+    inComposite: false,
   },
 ];
 
@@ -149,11 +157,13 @@ export function MethodologyDialog() {
             How scores are calculated.
           </h2>
           <p className="relative mt-2 max-w-xl text-sm text-muted-foreground">
-            The composite (0–100) averages three equally-weighted dimensions:
-            <span className="text-foreground"> technical, fundamental, sentiment</span>.
-            Price and volatility are shown for context but excluded from the score —
-            per industry convention, price returns belong inside technical and
-            volatility is a risk overlay used for sizing, not picking.
+            The composite (0–100) is the equally-weighted mean of just three
+            dimensions:{" "}
+            <span className="text-foreground">technical, fundamental, sentiment</span>.{" "}
+            <span className="text-foreground">Price and volatility are excluded</span>{" "}
+            — they're displayed alongside as context, but the composite ignores
+            them. Price returns already live inside the technical signal, and
+            volatility is a risk overlay used for sizing rather than picking.
           </p>
 
           {/* formula strip */}
@@ -183,9 +193,20 @@ export function MethodologyDialog() {
                 </span>
 
                 <div className="min-w-0">
-                  <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-                    {d.kicker}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                      {d.kicker}
+                    </p>
+                    <span
+                      className={
+                        d.inComposite
+                          ? "rounded-full border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-700 dark:text-emerald-400"
+                          : "rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-amber-700 dark:text-amber-400"
+                      }
+                    >
+                      {d.inComposite ? "In composite" : "Informational · not in composite"}
+                    </span>
+                  </div>
                   <h3 className="mt-1 text-lg font-semibold tracking-tight md:text-xl">
                     {d.title}
                   </h3>
