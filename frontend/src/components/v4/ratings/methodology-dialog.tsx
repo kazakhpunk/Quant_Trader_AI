@@ -118,7 +118,8 @@ export function MethodologyDialog() {
           className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border/70 bg-background px-2.5 text-[11px] font-medium uppercase tracking-wider text-foreground shadow-sm transition hover:bg-muted/40"
         >
           <Info className="h-3.5 w-3.5" />
-          <span>How scores work</span>
+          <span className="hidden xl:inline">How scores work</span>
+          <span className="xl:hidden">Scores</span>
         </button>
       </DialogTrigger>
 

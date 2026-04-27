@@ -161,8 +161,8 @@ export function TickerSearch({ rows }: { rows: RatingRow[] }) {
           className="inline-flex h-7 items-center gap-1.5 rounded-md border border-border/70 bg-background px-2.5 text-[11px] font-medium uppercase tracking-wider text-foreground shadow-sm transition hover:bg-muted/40"
         >
           <Search className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Find ticker</span>
-          <kbd className="ml-1 hidden rounded border border-border/60 bg-muted/40 px-1 font-mono text-[9px] tracking-wider text-muted-foreground sm:inline">
+          <span className="hidden xl:inline">Find ticker</span>
+          <kbd className="ml-1 hidden rounded border border-border/60 bg-muted/40 px-1 font-mono text-[9px] tracking-wider text-muted-foreground xl:inline">
             ⌘K
           </kbd>
         </button>
