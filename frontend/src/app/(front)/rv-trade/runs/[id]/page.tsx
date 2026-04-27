@@ -24,23 +24,47 @@ export default function RvRunDetailPage() {
 
   return (
     <ContentLayout title={`Run ${id.slice(0, 8)}`}>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            §RUN · {id.slice(0, 8)}
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+            Backtest result.
+          </h1>
+          <p className="mt-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            {new Date(run.ts).toLocaleString()} · {run.userEmail}
+          </p>
+        </div>
+      </div>
+
       <div className="space-y-6">
         <MetricsCard metrics={run.metrics} />
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuration</CardTitle>
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Equity curve
+            </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm font-mono whitespace-pre overflow-x-auto">
-            {JSON.stringify(run.config, null, 2)}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle>Equity curve</CardTitle></CardHeader>
           <CardContent><EquityCurve data={run.equityCurve} /></CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>Trades</CardTitle></CardHeader>
-          <CardContent><TradeLogTable trades={run.trades} /></CardContent>
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Trades
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0"><TradeLogTable trades={run.trades} /></CardContent>
+        </Card>
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Configuration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto whitespace-pre font-mono text-xs text-muted-foreground">
+            {JSON.stringify(run.config, null, 2)}
+          </CardContent>
         </Card>
       </div>
     </ContentLayout>

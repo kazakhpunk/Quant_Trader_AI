@@ -43,18 +43,41 @@ export default function RvBacktestPage() {
 
   return (
     <ContentLayout title="RV Trade — Backtest">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-b border-border/60 pb-6">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
+            §BACKTEST · simulate the rule set
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">
+            Tune rules, run, compare.
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Entry / exit / stop thresholds in z-score units. Round-trip costs in basis points.
+            Equal-weight or inverse-vol sizing across active pairs.
+          </p>
+        </div>
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <Card>
-          <CardHeader><CardTitle>Configure</CardTitle></CardHeader>
+        <Card className="border-border/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+              Configure
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <BacktestConfig value={config} onChange={setConfig} onRun={runBacktest} loading={loading} />
-            {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+            {error && (
+              <p className="mt-3 rounded-md border border-rose-500/30 bg-rose-500/5 px-3 py-2 text-sm text-rose-700 dark:text-rose-400">
+                {error}
+              </p>
+            )}
           </CardContent>
         </Card>
 
         <div className="space-y-6">
           {loading && !run && (
-            <Card>
+            <Card className="border-border/60">
               <CardContent>
                 <Loader height="320px" message="Running backtest…" />
               </CardContent>
@@ -62,18 +85,30 @@ export default function RvBacktestPage() {
           )}
           {run && <>
             <MetricsCard metrics={run.metrics} />
-            <Card>
-              <CardHeader><CardTitle>Equity curve</CardTitle></CardHeader>
+            <Card className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Equity curve
+                </CardTitle>
+              </CardHeader>
               <CardContent><EquityCurve data={run.equityCurve} /></CardContent>
             </Card>
-            <Card>
-              <CardHeader><CardTitle>Trade log</CardTitle></CardHeader>
-              <CardContent><TradeLogTable trades={run.trades} /></CardContent>
+            <Card className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                  Trade log
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0"><TradeLogTable trades={run.trades} /></CardContent>
             </Card>
           </>}
-          <Card>
-            <CardHeader><CardTitle>History</CardTitle></CardHeader>
-            <CardContent><RunsHistoryTable runs={history} /></CardContent>
+          <Card className="border-border/60">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+                History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0"><RunsHistoryTable runs={history} /></CardContent>
           </Card>
         </div>
       </div>

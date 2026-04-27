@@ -103,7 +103,7 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
 
   if (error) {
     return (
-      <div className="flex h-[420px] w-full items-center justify-center text-sm text-rose-600">
+      <div className="flex h-[640px] w-full items-center justify-center text-sm text-rose-600">
         Failed to load series stats: {error}
       </div>
     );
@@ -119,7 +119,7 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
 
   if (!withStats.length) {
     return (
-      <div className="flex h-[420px] w-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-[640px] w-full items-center justify-center text-sm text-muted-foreground">
         No series stats available — check FRED/Yahoo connectivity.
       </div>
     );
@@ -138,7 +138,7 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
 
   return (
     <div className="space-y-2">
-      <div className="h-[420px] w-full">
+      <div className="h-[640px] w-full">
         <ResponsiveContainer>
           <ScatterChart margin={{ top: 16, right: 24, bottom: 16, left: 24 }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -169,9 +169,15 @@ export function UniverseMap({ countries }: { countries: AssetDto[] }) {
                 );
               }}
             />
-            <Scatter data={data}>
+            <Scatter data={data} legendType="none">
               {data.map((d, i) => (
-                <Cell key={i} fill={CATEGORY_COLORS[d.category] || "#888"} />
+                <Cell
+                  key={i}
+                  fill={CATEGORY_COLORS[d.category] || "#888"}
+                  fillOpacity={0.85}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                />
               ))}
             </Scatter>
           </ScatterChart>
