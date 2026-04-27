@@ -31,7 +31,8 @@ interface PositionData {
 interface OrderData {
   id: string;
   symbol: string;
-  orderType: string;
+  side: "buy" | "sell";
+  type?: string;             // market / limit / stop / ...
   qty: number;
   filled_qty: number;
   status: string;
@@ -432,9 +433,7 @@ const Dashboard = () => {
                   >
                     <td className="px-4 py-3 font-medium">{o.symbol}</td>
                     <td className="px-4 py-3">
-                      <span className="inline-flex items-center rounded-full border border-border/60 bg-background px-2 py-0.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Buy
-                      </span>
+                      <SideBadge side={o.side} />
                     </td>
                     <td className="px-4 py-3 text-right font-mono tabular-nums">
                       {o.qty}
@@ -510,6 +509,22 @@ function Kpi({
         </p>
       )}
     </div>
+  );
+}
+
+function SideBadge({ side }: { side?: "buy" | "sell" }) {
+  const isSell = side === "sell";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+        isSell
+          ? "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400"
+          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+      )}
+    >
+      {isSell ? "Sell" : "Buy"}
+    </span>
   );
 }
 
