@@ -55,11 +55,15 @@ async function fetchHistory(
     // unrealized P&L number on the rightmost bar.
     const r = await fetch(`${getApiUrl()}/api/v4/positions-pnl-history`, {
       method: "POST",
+      // `cache: "no-store"` on the request + `Cache-Control: no-store` on
+      // the backend response is enough to prevent stale payloads. We do NOT
+      // send a Cache-Control request *header* because that adds it to the
+      // CORS preflight Access-Control-Request-Headers, and the backend
+      // currently only allows Content-Type + Authorization.
       cache: "no-store",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "Cache-Control": "no-cache",
       },
       body: JSON.stringify({ period, isLive: isLiveTrading }),
     });
