@@ -7,9 +7,11 @@ import { buildSignal } from './signal-service';
 import { runBacktest } from './backtest-engine';
 import { RvStore } from './rv-store';
 import { BacktestConfig, TradingRules } from './rv-types';
+import { memoize, invalidate } from '../lib/response-cache';
 
 const FRED_CACHE_MS = 6 * 60 * 60 * 1000;        // 6h
 const HISTORY_DAYS = 5 * 365;                    // 5y default lookback
+const RESPONSE_CACHE_MS = 5 * 60 * 1000;         // 5min — cheap re-renders, fresh enough
 
 export class RvController {
   private yahoo: YahooSeriesClient;
@@ -29,18 +31,17 @@ export class RvController {
   };
 
   getUniverseStats = async (_req: Request, res: Response) => {
-    let series: Map<string, { dates: string[]; values: number[] }>;
-    try {
-      series = await this.fetchSeries();
-    } catch {
-      series = new Map();
-    }
-    const stats: Record<string, ReturnType<typeof computeSeriesStats>> = {};
-    for (const a of UNIVERSE) {
-      const s = series.get(a.iso);
-      stats[a.iso] = s && s.values.length >= 30 ? computeSeriesStats(s.values) : null;
-    }
-    res.json({ stats });
+    const result = await memoize('rv:universe-stats', RESPONSE_CACHE_MS, async () => {
+      let series: Map<string, { dates: string[]; values: number[] }>;
+      try { series = await this.fetchSeries(); } catch { series = new Map(); }
+      const stats: Record<string, ReturnType<typeof computeSeriesStats>> = {};
+      for (const a of UNIVERSE) {
+        const s = series.get(a.iso);
+        stats[a.iso] = s && s.values.length >= 30 ? computeSeriesStats(s.values) : null;
+      }
+      return { stats };
+    });
+    res.json(result);
   };
 
   private async fetchSeries(): Promise<Map<string, { dates: string[]; values: number[] }>> {
@@ -66,26 +67,63 @@ export class RvController {
   }
 
   getPairs = async (_req: Request, res: Response) => {
-    const series = await this.fetchSeries();
-    const flat = new Map<string, number[]>();
-    for (const [iso, s] of series) flat.set(iso, s.values);
-    const pairs = runPairPipeline(UNIVERSE.filter(c => flat.has(c.iso)), flat);
-    res.json({ pairs, config: DEFAULT_PIPELINE_CONFIG });
+    const result = await memoize('rv:pairs', RESPONSE_CACHE_MS, async () => {
+      const series = await this.fetchSeries();
+      const flat = new Map<string, number[]>();
+      for (const [iso, s] of series) flat.set(iso, s.values);
+      const pairs = runPairPipeline(UNIVERSE.filter(c => flat.has(c.iso)), flat);
+      return { pairs, config: DEFAULT_PIPELINE_CONFIG };
+    });
+    res.json(result);
   };
 
   getSignals = async (req: Request, res: Response) => {
     const userEmail = (req as any).userEmail || 'anonymous';
-    const series = await this.fetchSeries();
-    const flat = new Map<string, number[]>();
-    for (const [iso, s] of series) flat.set(iso, s.values);
-    const pairs = runPairPipeline(UNIVERSE.filter(c => flat.has(c.iso)), flat).filter(p => p.status === 'active');
-    const asOf = new Date().toISOString().slice(0, 10);
-    const signals = pairs
-      .map(p => buildSignal(p, flat.get(p.a.iso)!, flat.get(p.b.iso)!, asOf))
-      .filter((s): s is NonNullable<typeof s> => s !== null);
-    await this.store.saveSnapshot(userEmail, asOf, signals);
-    res.json({ asOf, signals });
+    // POST /signals/refresh routes through this same handler; bust the cache
+    // so the user gets fresh values instead of the memoized snapshot.
+    if (req.method === 'POST') invalidate('rv:signals');
+    const result = await memoize('rv:signals', RESPONSE_CACHE_MS, async () => {
+      const series = await this.fetchSeries();
+      const flat = new Map<string, number[]>();
+      for (const [iso, s] of series) flat.set(iso, s.values);
+      const pairs = runPairPipeline(UNIVERSE.filter(c => flat.has(c.iso)), flat).filter(p => p.status === 'active');
+      const asOf = new Date().toISOString().slice(0, 10);
+      const signals = pairs
+        .map(p => buildSignal(p, flat.get(p.a.iso)!, flat.get(p.b.iso)!, asOf))
+        .filter((s): s is NonNullable<typeof s> => s !== null);
+      return { asOf, signals };
+    });
+    await this.store.saveSnapshot(userEmail, result.asOf, result.signals);
+    res.json(result);
   };
+
+  /** Background pre-warm — kick off the slow handlers once at boot so the
+   *  first user-facing request is fast. Failures here are intentionally
+   *  swallowed; if FRED is down or no key is set, the cache simply stays
+   *  empty and per-request handlers will retry. */
+  warm() {
+    setImmediate(() => {
+      memoize('rv:universe-stats', RESPONSE_CACHE_MS, async () => {
+        let series: Map<string, { dates: string[]; values: number[] }>;
+        try { series = await this.fetchSeries(); } catch { series = new Map(); }
+        const stats: Record<string, ReturnType<typeof computeSeriesStats>> = {};
+        for (const a of UNIVERSE) {
+          const s = series.get(a.iso);
+          stats[a.iso] = s && s.values.length >= 30 ? computeSeriesStats(s.values) : null;
+        }
+        return { stats };
+      })
+        .then(() => memoize('rv:pairs', RESPONSE_CACHE_MS, async () => {
+          const series = await this.fetchSeries();
+          const flat = new Map<string, number[]>();
+          for (const [iso, s] of series) flat.set(iso, s.values);
+          const pairs = runPairPipeline(UNIVERSE.filter(c => flat.has(c.iso)), flat);
+          return { pairs, config: DEFAULT_PIPELINE_CONFIG };
+        }))
+        .then(() => console.log('[rv] warm-up complete'))
+        .catch((e) => console.warn('[rv] warm-up skipped:', e?.message ?? e));
+    });
+  }
 
   postBacktest = async (req: Request, res: Response) => {
     const userEmail = (req as any).userEmail || 'anonymous';

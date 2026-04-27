@@ -12,6 +12,7 @@ export const createRvRouter = (db: Db): Router => {
     cacheSet: (k, obs) => store.setCachedFred(k, obs),
   });
   const ctl = new RvController(store, fred);
+  ctl.warm();
 
   router.get('/rv/universe',       ctl.getUniverse);
   router.get('/rv/universe/stats', ctl.getUniverseStats);
