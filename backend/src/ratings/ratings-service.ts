@@ -54,11 +54,45 @@ export function normalizeRsiLong(rsi: number): number {
   return clamp01(100 - rsi); // RSI 30 → 70 (good long), RSI 70 → 30
 }
 
+// SMA20 vs SMA50 trend strength. Uses the *relative* gap so the score is
+// scale-invariant (a $100 stock with a $5 gap and a $20 stock with a $1 gap
+// are both 5% spreads → same score). Saturates at ±10%.
+//   gap = 0%   → 50 (neutral, signals crossing)
+//   gap = +5%  → 75 (uptrend)
+//   gap = +10% → 100 (strong uptrend)
+//   gap = -5%  → 25
+//   gap = -10% → 0
+export function normalizeTrendLong(sma20: number, sma50: number): number {
+  if (!Number.isFinite(sma20) || !Number.isFinite(sma50) || sma50 <= 0) return 50;
+  const gapPct = ((sma20 - sma50) / sma50) * 100;
+  return clamp01(50 + gapPct * 5);
+}
+
 export function normalizePeLong(pe: number): number {
   if (!Number.isFinite(pe)) return 50;
   if (pe <= 0) return 0;          // losses kill a long thesis
   if (pe < 15) return 100;        // anything cheaper than fair = best long
   return clamp01(100 - (pe - 15) * 2);
+}
+
+// PEG = P/E adjusted for growth. PEG ≈ 1 is fair-priced for the growth rate;
+// < 1 is cheap relative to growth (best long); > 2 is expensive.
+//   peg = 0.5 → 100 (saturated cheap)
+//   peg = 1   → 75
+//   peg = 1.5 → 50 (neutral)
+//   peg = 2.5 → 0  (saturated expensive)
+//   peg ≤ 0   → 50 (negative-growth or data error → neutral, do not penalize)
+export function normalizePegLong(peg: number): number {
+  if (!Number.isFinite(peg) || peg <= 0) return 50;
+  return clamp01(125 - peg * 50);
+}
+
+// Profit margin: positive margin = quality / pricing power, which tilts a
+// name *toward* a long thesis. 25%+ margin saturates at 100; -25% at 0.
+// Decimal input expected (0.10 = 10%).
+export function normalizeMarginLong(m: number): number {
+  if (!Number.isFinite(m)) return 50;
+  return clamp01(50 + m * 200);
 }
 
 export function normalizeSentimentLong(s: number): number {
@@ -85,11 +119,31 @@ export function normalizeRsiShort(rsi: number): number {
   return clamp01(rsi); // RSI 70 → 70 (good short), RSI 30 → 30
 }
 
+// Mirror of normalizeTrendLong: a downward-crossed SMA20 (below SMA50) is
+// bullish *for shorts*. Uses the same ±10% saturation band.
+export function normalizeTrendShort(sma20: number, sma50: number): number {
+  if (!Number.isFinite(sma20) || !Number.isFinite(sma50) || sma50 <= 0) return 50;
+  const gapPct = ((sma20 - sma50) / sma50) * 100;
+  return clamp01(50 - gapPct * 5);
+}
+
 export function normalizePeShort(pe: number): number {
   if (!Number.isFinite(pe)) return 50;
   if (pe <= 0) return 100;        // losses = strong short thesis
   if (pe < 15) return 0;          // cheap = bad short
   return clamp01((pe - 15) * 2);
+}
+
+// Mirror of normalizePegLong: high PEG = expensive growth = good short.
+export function normalizePegShort(peg: number): number {
+  if (!Number.isFinite(peg) || peg <= 0) return 50;
+  return clamp01(peg * 50 - 25);
+}
+
+// Mirror of normalizeMarginLong: low / negative margin = weak business = good short.
+export function normalizeMarginShort(m: number): number {
+  if (!Number.isFinite(m)) return 50;
+  return clamp01(50 - m * 200);
 }
 
 export function normalizeSentimentShort(s: number): number {
@@ -155,11 +209,38 @@ export class RatingsService {
         asOf: new Date().toISOString(),
       };
 
-      // ----- technical (RSI-14 driven) -----
+      // ----- technical: equal-weighted blend of RSI + SMA20/50 + EMA20/50 -----
+      // Each contributing component is direction-aware (long & short).
+      //   • RSI-14         → momentum (short-term overbought / oversold)
+      //   • SMA20 vs SMA50 → trend (slow, smoothed)
+      //   • EMA20 vs EMA50 → trend (faster, recency-weighted)
+      // SMA and EMA are correlated but not identical — the EMA picks up
+      // recent regime changes faster, which acts as a tie-breaker when the
+      // SMA gap is borderline. Components missing from the upstream data
+      // are simply dropped from the average; if all three are missing the
+      // technical score stays at neutral (50).
+      const techLong: number[] = [];
+      const techShort: number[] = [];
       if (typeof doc.rsi14 === "number") {
-        row.scores.technical = normalizeRsi(doc.rsi14);
-        row.scoresLong.technical = normalizeRsiLong(doc.rsi14);
-        row.scoresShort.technical = normalizeRsiShort(doc.rsi14);
+        techLong.push(normalizeRsiLong(doc.rsi14));
+        techShort.push(normalizeRsiShort(doc.rsi14));
+        row.scores.technical = normalizeRsi(doc.rsi14); // legacy field: undirected RSI
+      }
+      if (typeof doc.sma20 === "number" && typeof doc.sma50 === "number") {
+        techLong.push(normalizeTrendLong(doc.sma20, doc.sma50));
+        techShort.push(normalizeTrendShort(doc.sma20, doc.sma50));
+      }
+      if (typeof doc.ema20 === "number" && typeof doc.ema50 === "number") {
+        // The trend normalizer is moving-average-agnostic — same math works
+        // for EMA pairs.
+        techLong.push(normalizeTrendLong(doc.ema20, doc.ema50));
+        techShort.push(normalizeTrendShort(doc.ema20, doc.ema50));
+      }
+      if (techLong.length > 0) {
+        row.scoresLong.technical =
+          techLong.reduce((s, v) => s + v, 0) / techLong.length;
+        row.scoresShort.technical =
+          techShort.reduce((s, v) => s + v, 0) / techShort.length;
       }
       row.metrics.technical = {
         rsi: doc.rsi14,
@@ -204,10 +285,35 @@ export class RatingsService {
       const t = doc.ticker as string;
       if (!t || !byTicker[t]) continue;
       const row = byTicker[t];
+      // ----- fundamental: equal-weighted blend of P/E + PEG + profit margin -----
+      // Three independent reads on "is the business worth owning":
+      //   • P/E           → price relative to current earnings
+      //   • PEG           → price relative to growth-adjusted earnings
+      //   • Profit margin → quality / pricing power
+      // Dividend yield and payout ratio are kept as descriptive metrics only —
+      // a high yield can be a value trap (long) and a stable dividend hurts
+      // a short thesis (short), and modeling that asymmetrically would just
+      // be curve-fitting at this universe size.
+      const fundLong: number[] = [];
+      const fundShort: number[] = [];
       if (typeof doc.peRatio === "number") {
-        row.scores.fundamental = normalizePe(doc.peRatio);
-        row.scoresLong.fundamental = normalizePeLong(doc.peRatio);
-        row.scoresShort.fundamental = normalizePeShort(doc.peRatio);
+        fundLong.push(normalizePeLong(doc.peRatio));
+        fundShort.push(normalizePeShort(doc.peRatio));
+        row.scores.fundamental = normalizePe(doc.peRatio); // legacy field
+      }
+      if (typeof doc.pegRatio === "number") {
+        fundLong.push(normalizePegLong(doc.pegRatio));
+        fundShort.push(normalizePegShort(doc.pegRatio));
+      }
+      if (typeof doc.profitMargin === "number") {
+        fundLong.push(normalizeMarginLong(doc.profitMargin));
+        fundShort.push(normalizeMarginShort(doc.profitMargin));
+      }
+      if (fundLong.length > 0) {
+        row.scoresLong.fundamental =
+          fundLong.reduce((s, v) => s + v, 0) / fundLong.length;
+        row.scoresShort.fundamental =
+          fundShort.reduce((s, v) => s + v, 0) / fundShort.length;
       }
       row.metrics.fundamental = {
         pe: doc.peRatio,
@@ -218,16 +324,39 @@ export class RatingsService {
       };
     }
 
-    // ----- sentiment -----
+    // ----- sentiment: polarity attenuated by article count -----
+    // A single headline is noise; 20+ headlines is signal. The raw polarity
+    // is mixed with neutral 50 in proportion to (1 − confidence), where
+    // confidence = min(1, newsCount / 20). Practically:
+    //   newsCount = 0   → confidence 0    → score = 50  (neutral, no info)
+    //   newsCount = 5   → confidence 0.25 → 25% sentiment + 75% neutral
+    //   newsCount = 20+ → confidence 1    → full sentiment polarity
+    // This is the "give every metric a contribution" version: the score
+    // *and* the article count both shape the dimension's contribution to
+    // the composite.
+    const blendSentiment = (
+      raw: number,
+      newsCount: number,
+      direction: "long" | "short",
+    ): number => {
+      const conf = Math.max(0, Math.min(1, (newsCount || 0) / 20));
+      const polarized =
+        direction === "long"
+          ? normalizeSentimentLong(raw)
+          : normalizeSentimentShort(raw);
+      return conf * polarized + (1 - conf) * 50;
+    };
+
     const sentimentDocs = await this.db.collection("sentimentData").find({}).toArray();
     for (const doc of sentimentDocs) {
       const t = doc.ticker as string;
       if (!t || !byTicker[t]) continue;
       if (typeof doc.sentiment !== "number") continue;
       const row = byTicker[t];
+      const news = typeof doc.newsCount === "number" ? doc.newsCount : 0;
       row.scores.sentiment = normalizeSentimentRaw(doc.sentiment);
-      row.scoresLong.sentiment = normalizeSentimentLong(doc.sentiment);
-      row.scoresShort.sentiment = normalizeSentimentShort(doc.sentiment);
+      row.scoresLong.sentiment = blendSentiment(doc.sentiment, news, "long");
+      row.scoresShort.sentiment = blendSentiment(doc.sentiment, news, "short");
       row.metrics.sentiment = { score: doc.sentiment, newsCount: doc.newsCount };
     }
     const longCands = await this.db.collection("longCandidates").find({}).toArray();
@@ -237,9 +366,10 @@ export class RatingsService {
       if (!t || !byTicker[t] || byTicker[t].metrics.sentiment) continue;
       if (typeof doc.sentiment !== "number") continue;
       const row = byTicker[t];
+      // Fallback path has no newsCount — treat as low-confidence (5 articles).
       row.scores.sentiment = normalizeSentimentRaw(doc.sentiment);
-      row.scoresLong.sentiment = normalizeSentimentLong(doc.sentiment);
-      row.scoresShort.sentiment = normalizeSentimentShort(doc.sentiment);
+      row.scoresLong.sentiment = blendSentiment(doc.sentiment, 5, "long");
+      row.scoresShort.sentiment = blendSentiment(doc.sentiment, 5, "short");
       row.metrics.sentiment = { score: doc.sentiment };
     }
 
@@ -252,5 +382,49 @@ export class RatingsService {
       return row;
     });
     return out.sort((a, b) => b.compositeLong - a.compositeLong);
+  }
+
+  /** Today's UTC date as YYYY-MM-DD. Snapshot collection keys off this so a
+   *  single global snapshot is shared across all callers (authed or anon)
+   *  and rolls over at UTC midnight — same cadence as the QStash daily
+   *  /update job that refreshes the underlying technical/fundamental/
+   *  sentiment collections. */
+  private todayKey(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  /** Read-through snapshot: returns today's cached rows if they exist,
+   *  otherwise computes via getAll(), persists the snapshot, and returns it.
+   *  Anonymous visitors hit this same path — no Alpaca state is read. */
+  async getCached(): Promise<RatingRow[]> {
+    const date = this.todayKey();
+    const cached = await this.db
+      .collection("ratings_snapshots")
+      .findOne({ date });
+    if (cached?.rows?.length) return cached.rows as RatingRow[];
+
+    const rows = await this.getAll();
+    if (rows.length > 0) {
+      // upsert so two concurrent first-of-day requests don't both insert
+      await this.db.collection("ratings_snapshots").updateOne(
+        { date },
+        { $setOnInsert: { date, rows, asOf: new Date().toISOString() } },
+        { upsert: true },
+      );
+    }
+    return rows;
+  }
+
+  /** Force-write today's snapshot, overwriting any existing one. Useful for
+   *  the QStash daily /update job to call after refreshing the upstream
+   *  data so the next page load doesn't pay the join cost. */
+  async refreshSnapshot(): Promise<RatingRow[]> {
+    const rows = await this.getAll();
+    await this.db.collection("ratings_snapshots").updateOne(
+      { date: this.todayKey() },
+      { $set: { rows, asOf: new Date().toISOString() } },
+      { upsert: true },
+    );
+    return rows;
   }
 }

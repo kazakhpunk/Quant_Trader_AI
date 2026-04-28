@@ -77,7 +77,7 @@ export function RatingsPage() {
       <StickySubnav
         left={<DirectionToggle value={direction} onChange={setDirection} />}
         right={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 xl:mr-16 mr-8">
             <TickerSearch rows={projected} />
             <MethodologyDialog />
           </div>

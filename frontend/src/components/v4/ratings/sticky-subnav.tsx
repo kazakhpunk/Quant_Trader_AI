@@ -27,7 +27,7 @@ export function StickySubnav({
   return (
     <nav
       aria-label="Ratings sections"
-      className="pointer-events-none sticky top-0 z-20 -mx-4 -mt-2 mb-2 flex h-14 items-center gap-4 px-4 md:-mx-8 md:px-8"
+      className="pointer-events-none sticky top-0 z-20 -mx-4 mt-2 mb-2 flex h-14 items-center gap-4 px-4 md:-mx-8 md:px-8"
     >
       {left && <div className="pointer-events-auto shrink-0">{left}</div>}
       <div className="pointer-events-auto flex min-w-0 flex-1 items-center gap-4 overflow-x-auto">
@@ -44,7 +44,6 @@ export function StickySubnav({
       {right && <div className="pointer-events-auto shrink-0">{right}</div>}
       {/* Reserves space for the navbar's right-side icon cluster
           (ModeToggle, SignUp, UserNav) so they remain unobscured + clickable. */}
-      <div className={`shrink-0 ${NAVBAR_ICON_RESERVE}`} aria-hidden />
     </nav>
   );
 }

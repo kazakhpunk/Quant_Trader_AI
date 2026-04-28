@@ -36,15 +36,17 @@ const DIMENSIONS: Dim[] = [
   {
     n: "01",
     kicker: "Technical",
-    title: "Short-term momentum & structure",
-    driver: "RSI-14 (Relative Strength Index)",
-    formula: "score = 100 − |RSI − 50| × 2",
+    title: "Momentum and trend",
+    driver: "RSI-14 · SMA20/50 trend · EMA20/50 trend",
+    formula:
+      "score = mean( clamp(100 − rsi),  clamp(50 + smaGap% × 5),  clamp(50 + emaGap% × 5) )",
     plain:
-      "Today's normalizer scores RSI 50 as healthiest and treats both overbought (>70) and oversold (<30) as risky. A long/short split is on the way — once it lands, low RSI will boost long scores and high RSI will boost short scores.",
+      "Three direction-aware reads averaged: RSI catches short-term momentum, the SMA gap catches slow trend, the EMA gap catches the same trend faster. Components missing from the upstream data are dropped before averaging.",
     terms: [
-      { term: "RSI", meaning: "0–100 momentum oscillator. <30 oversold, >70 overbought, ~50 neutral." },
-      { term: "SMA20 / SMA50", meaning: "Simple moving averages. SMA20 > SMA50 = short-term uptrend." },
-      { term: "EMA20 / EMA50", meaning: "Exponential moving averages — same idea but weights recent prices more." },
+      { term: "RSI", meaning: "0–100 momentum oscillator. <30 oversold (good for long), >70 overbought (good for short)." },
+      { term: "SMA20 / SMA50", meaning: "Simple moving averages. SMA20 above SMA50 = uptrend." },
+      { term: "EMA20 / EMA50", meaning: "Exponential moving averages — same trend signal but recency-weighted, reacts faster." },
+      { term: "gap%", meaning: "(fast − slow) / slow × 100 — relative gap so a $5 stock and $500 stock with the same percentage gap score the same. Saturates at ±10%." },
     ],
     icon: Activity,
     inComposite: true,
@@ -53,16 +55,15 @@ const DIMENSIONS: Dim[] = [
     n: "02",
     kicker: "Fundamental",
     title: "Is the business worth owning?",
-    driver: "P/E (Price ÷ Earnings)",
-    formula: "score = 100 − |P/E − 15| × 2   (P/E ≤ 0 → 0)",
+    driver: "P/E · PEG · profit margin",
+    formula: "score = mean( peScore, pegScore, marginScore )",
     plain:
-      "Triangle around 15, the historical 'fair' P/E. Losses are auto-zeroed. Other fundamental columns are shown for context but don't currently affect the score.",
+      "Three valuation reads averaged. P/E is price relative to current earnings (anchored at 15). PEG adjusts P/E for growth (anchored at 1). Margin captures pricing power. Each is direction-aware and clamped to 0–100.",
     terms: [
-      { term: "P/E", meaning: "How many years of current earnings the price represents. ~15 = fair." },
-      { term: "PEG", meaning: "P/E adjusted for earnings growth. <1 = cheap relative to growth rate." },
-      { term: "Margin", meaning: "Profit margin — share of revenue that becomes profit. Negative = burning cash." },
-      { term: "Div yield", meaning: "Annual dividend ÷ share price." },
-      { term: "Payout", meaning: "Share of earnings paid out as dividend. >100% = unsustainable." },
+      { term: "peScore (long)", meaning: "pe ≤ 0 → 0; pe < 15 → 100; else clamp(100 − (pe − 15) × 2). Short side mirrors." },
+      { term: "pegScore (long)", meaning: "peg ≤ 0 → 50; else clamp(125 − peg × 50). Short side mirrors." },
+      { term: "marginScore (long)", meaning: "clamp(50 + margin × 200). Decimal input (0.10 = 10%). Short side mirrors." },
+      { term: "Div yield · Payout", meaning: "Shown for context. High yield can be a value trap; high payout can be unsustainable. Excluded from the score." },
     ],
     icon: Building2,
     inComposite: true,
@@ -71,13 +72,15 @@ const DIMENSIONS: Dim[] = [
     n: "03",
     kicker: "Sentiment",
     title: "What is the market saying right now?",
-    driver: "Mean polarity of latest 10 news headlines",
-    formula: "score = 50 + sentiment × 5",
+    driver: "Headline polarity × article-count confidence",
+    formula:
+      "confidence = min(1, newsCount / 20)\nscore = confidence × clamp(50 + s × 5) + (1 − confidence) × 50",
     plain:
-      "Headlines are scored with the `sentiment` npm package (rule-based NLP, integer scores per word). The mean across articles maps linearly to the 0–100 dimension score.",
+      "Headlines are scored with the `sentiment` npm package (rule-based NLP, integer per-word polarity). The mean across articles maps linearly to a 0–100 polarity score, then attenuated toward neutral 50 in proportion to (1 − confidence). 0 articles → score = 50; 20+ articles → full polarity.",
     terms: [
-      { term: "Sentiment score", meaning: "Mean polarity across recent headlines. 0 = neutral, +10 = strongly positive, −10 = strongly negative." },
-      { term: "Articles", meaning: "Number of headlines that fed the score. Higher = more confidence in the signal." },
+      { term: "s", meaning: "Mean per-article sentiment polarity. ~ −10 strongly negative, 0 neutral, +10 strongly positive." },
+      { term: "newsCount", meaning: "Number of headlines that fed the polarity score. Drives the confidence weight." },
+      { term: "confidence", meaning: "min(1, newsCount / 20). With 5 articles you get 25% confidence; 20+ articles gives full weight." },
     ],
     icon: MessageSquareText,
     inComposite: true,
@@ -85,9 +88,9 @@ const DIMENSIONS: Dim[] = [
   {
     n: "04",
     kicker: "Price",
-    title: "Where the price is actually heading",
+    title: "Where the price is heading",
     driver: "30-day percent change",
-    formula: "score = 50 + pct30d × 2.5",
+    formula: "score = clamp(50 + pct30d × 2.5)",
     plain:
       "Centered on 0% return: a flat name scores 50, +20% over the month scores 100, −20% scores 0. 1d and 5d returns are shown for context but don't affect the score.",
     terms: [
@@ -103,12 +106,13 @@ const DIMENSIONS: Dim[] = [
     kicker: "Volatility",
     title: "How much it swings — risk per dollar",
     driver: "Annualized standard deviation of daily returns",
-    formula: "score = 100 − σ_ann × 1.25",
+    formula:
+      "long  = clamp(100 − σ_ann × 1.25)\nshort = clamp(100 − σ_ann × 1.5)   // shorts penalize vol harder",
     plain:
-      "Lower volatility = higher score, because a stable name is safer to size into. Drives stop-loss placement and position sizing more than direction.",
+      "Lower volatility = higher score, because a stable name is safer to size into. Drives stop-loss placement and position sizing more than direction. Shorts dock vol harder because squeeze risk is asymmetric.",
     terms: [
-      { term: "30d σ (ann.)", meaning: "Standard deviation of last 30 daily returns × √252. ~15-20% = market-typical, 40%+ is volatile." },
-      { term: "ATR-14", meaning: "Average True Range over 14 bars — the typical dollar swing per day. Used for stop-width." },
+      { term: "30d σ (ann.)", meaning: "Standard deviation of last 30 daily returns × √252. ~15-20% market-typical, 40%+ is volatile." },
+      { term: "ATR-14", meaning: "Average True Range over 14 bars — typical dollar swing per day. Used for stop-width." },
     ],
     icon: Waves,
     inComposite: false,
@@ -162,8 +166,8 @@ export function MethodologyDialog() {
             <span className="text-foreground">technical, fundamental, sentiment</span>.{" "}
             <span className="text-foreground">Price and volatility are excluded</span>{" "}
             — they're displayed alongside as context, but the composite ignores
-            them. Price returns already live inside the technical signal, and
-            volatility is a risk overlay used for sizing rather than picking.
+            them. Inside each dimension, every contributing metric is normalized
+            to 0–100 and the dimension is the mean of those components.
           </p>
 
           {/* formula strip */}
@@ -173,7 +177,7 @@ export function MethodologyDialog() {
             <span className="uppercase tracking-wider text-foreground">price · vol</span>
             <span>= shown as informational columns; do not affect the composite</span>
             <span className="uppercase tracking-wider text-foreground">missing data</span>
-            <span>= dimension defaults to 50 (neutral) — neither helps nor hurts</span>
+            <span>= component dropped from the dimension's mean; if all components missing, dim defaults to 50</span>
           </div>
         </div>
 
@@ -219,12 +223,12 @@ export function MethodologyDialog() {
                       <span className="text-foreground/85">{d.driver}</span>
                     </div>
                     <div className="flex items-baseline gap-3">
-                      <span className="w-16 shrink-0 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                      <span className="w-16 shrink-0 pt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                         Formula
                       </span>
-                      <code className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-foreground/90">
-                        {d.formula}
-                      </code>
+                      <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-muted/60 px-1.5 py-0.5 font-mono text-xs leading-relaxed text-foreground/90">
+{d.formula}
+                      </pre>
                     </div>
                   </div>
 
@@ -256,7 +260,7 @@ export function MethodologyDialog() {
         {/* FOOTER */}
         <div className="flex items-center justify-between gap-4 border-t border-border/60 bg-muted/20 px-8 py-4">
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Each dimension uses one metric today · multi-metric weighting on the roadmap
+            Each dimension averages every available component metric — multi-metric weighting on the roadmap.
           </p>
           <Button onClick={() => setOpen(false)} className="gap-2">
             Got it

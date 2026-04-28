@@ -8,5 +8,6 @@ export default function createRatingsRouter(db: Db): Router {
   const svc = new RatingsService(db);
   const ctrl = new RatingsController(svc);
   router.get("/ratings", ctrl.list);
+  router.post("/ratings/refresh", ctrl.refresh);
   return router;
 }

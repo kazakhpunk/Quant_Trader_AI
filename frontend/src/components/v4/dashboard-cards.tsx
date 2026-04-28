@@ -246,8 +246,16 @@ const Dashboard = () => {
     );
   }
 
-  // Show all open positions (no P&L filter).
-  const positions = data.positions ?? [];
+  // Show all open positions (no P&L filter), ordered by composite rating
+  // (highest first) so the strongest-rated holdings surface at the top.
+  // Tickers without a rating yet drop to the bottom; ties broken by symbol
+  // so the ordering is stable across refreshes.
+  const positions = [...(data.positions ?? [])].sort((a, b) => {
+    const ra = ratings[a.symbol]?.composite ?? -Infinity;
+    const rb = ratings[b.symbol]?.composite ?? -Infinity;
+    if (rb !== ra) return rb - ra;
+    return a.symbol.localeCompare(b.symbol);
+  });
   // Sum of qty × current_price across open positions = "what your
   // positions are worth right now" (your notional exposure). Computed
   // directly rather than reading Alpaca's market_value field so it stays
