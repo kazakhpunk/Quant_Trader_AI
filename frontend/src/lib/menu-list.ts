@@ -48,8 +48,8 @@ export function getMenuList(pathname: string): Group[] {
         },
         {
           href: "/trade",
-          label: "Trade",
-          active: pathname.includes("/trade"),
+          label: "Equity Trade",
+          active: pathname === "/trade" || pathname.startsWith("/trade/"),
           icon: CandlestickChart,
           submenus: [],
         },

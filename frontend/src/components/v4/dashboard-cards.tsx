@@ -248,11 +248,13 @@ const Dashboard = () => {
 
   // Show all open positions (no P&L filter).
   const positions = data.positions ?? [];
-  // Sum of current market values across open positions = "what your
-  // positions are worth right now". Replaces the old Unrealized-P&L KPI
-  // since the P&L chart below already surfaces that number.
+  // Sum of qty × current_price across open positions = "what your
+  // positions are worth right now" (your notional exposure). Computed
+  // directly rather than reading Alpaca's market_value field so it stays
+  // consistent even if a position's market_value is missing or stale.
   const totalPositionsValue = positions.reduce(
-    (sum, p) => sum + safeNumber(p.market_value),
+    (sum, p) =>
+      sum + Math.abs(safeNumber(p.qty) * safeNumber(p.current_price)),
     0
   );
   const orders = data.orders ?? [];
