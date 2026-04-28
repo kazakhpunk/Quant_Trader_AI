@@ -42,8 +42,6 @@ export function StickySubnav({
         ))}
       </div>
       {right && <div className="pointer-events-auto shrink-0">{right}</div>}
-      {/* Reserves space for the navbar's right-side icon cluster
-          (ModeToggle, SignUp, UserNav) so they remain unobscured + clickable. */}
     </nav>
   );
 }
