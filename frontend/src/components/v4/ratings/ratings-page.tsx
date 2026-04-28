@@ -9,9 +9,6 @@ import { MethodologyDialog } from "./methodology-dialog";
 import { DirectionToggle } from "./direction-toggle";
 import { TickerSearch } from "./ticker-search";
 import { OrderDrawer } from "@/components/v4/order-drawer/order-drawer";
-import { useStore } from "@/hooks/use-store";
-import { useSidebarToggle } from "@/hooks/use-sidebar-toggle";
-import { cn } from "@/lib/utils";
 
 // Map the row's directional scores into the legacy `composite`/`scores` fields
 // so children (CompositeTable, DimensionTable, etc.) stay direction-agnostic.
@@ -29,26 +26,6 @@ export function RatingsPage() {
   const [rows, setRows] = useState<RatingRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [direction, setDirection] = useState<Direction>("long");
-  // When the sidebar is open the content area narrows just enough that the
-  // sticky subnav's right edge lands underneath the global navbar's avatar +
-  // theme toggle. Push the methodology button left in that state to clear them.
-  const sidebar = useStore(useSidebarToggle, (s) => s);
-  const sidebarOpen = sidebar?.isOpen !== false;
-
-  // Match the Navbar's scroll threshold (8px) so the buttons-flush-right
-  // transition lines up with the navbar-icons-fade-out transition.
-  const [isScrolled, setIsScrolled] = useState(false);
-  useEffect(() => {
-    const update = () => setIsScrolled(window.scrollY > 8);
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
-  }, []);
-
-  // Buttons go flush right whenever the navbar icons aren't blocking the
-  // edge: either the sidebar is open (narrower content area, edge clears
-  // the icons) OR the user has scrolled (icons faded out by the navbar).
-  const flushRight = sidebarOpen || isScrolled;
 
   useEffect(() => {
     let alive = true;
@@ -92,16 +69,7 @@ export function RatingsPage() {
       <StickySubnav
         left={<DirectionToggle value={direction} onChange={setDirection} />}
         right={
-          <div
-            className={cn(
-              "flex items-center gap-2 transition-[margin] duration-200",
-              // Flush right whenever it's safe — sidebar open (narrower
-              // content area clears the navbar icons) or scrolled past the
-              // 8px threshold (navbar icons faded out). Otherwise reserve
-              // space so the controls don't kiss the navbar's icon cluster.
-              flushRight ? "" : "xl:mr-16 mr-8",
-            )}
-          >
+          <div className="flex items-center gap-2">
             <TickerSearch rows={projected} />
             <MethodologyDialog />
           </div>
