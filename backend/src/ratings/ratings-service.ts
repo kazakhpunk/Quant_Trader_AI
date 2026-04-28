@@ -193,6 +193,26 @@ export class RatingsService {
 
     const byTicker: Record<string, RatingRow> = {};
 
+    // Per-ticker per-component score buckets. Each entry is the {long, short}
+    // score for that component, or null if the upstream data for that
+    // component is missing. We collect first, then compute cross-ticker
+    // column means below to mean-impute missing components — that way a
+    // partially-observed ticker doesn't get penalized (or skipped) for
+    // the missing field, it inherits the universe average of that field.
+    type LRPair = { long: number; short: number };
+    type TechParts = {
+      rsi: LRPair | null;
+      smaTrend: LRPair | null;
+      emaTrend: LRPair | null;
+    };
+    type FundParts = {
+      pe: LRPair | null;
+      peg: LRPair | null;
+      margin: LRPair | null;
+    };
+    const techParts: Record<string, TechParts> = {};
+    const fundParts: Record<string, FundParts> = {};
+
     for (const doc of tickerDocs) {
       const t = doc.ticker as string;
       if (!t) continue;
@@ -209,38 +229,35 @@ export class RatingsService {
         asOf: new Date().toISOString(),
       };
 
-      // ----- technical: equal-weighted blend of RSI + SMA20/50 + EMA20/50 -----
-      // Each contributing component is direction-aware (long & short).
-      //   • RSI-14         → momentum (short-term overbought / oversold)
-      //   • SMA20 vs SMA50 → trend (slow, smoothed)
-      //   • EMA20 vs EMA50 → trend (faster, recency-weighted)
-      // SMA and EMA are correlated but not identical — the EMA picks up
-      // recent regime changes faster, which acts as a tie-breaker when the
-      // SMA gap is borderline. Components missing from the upstream data
-      // are simply dropped from the average; if all three are missing the
-      // technical score stays at neutral (50).
-      const techLong: number[] = [];
-      const techShort: number[] = [];
+      // ----- technical: collect per-component scores; final blend below -----
+      // Components: RSI-14 (momentum), SMA20/50 trend (slow), EMA20/50 trend
+      // (fast). The trend normalizer is moving-average-agnostic so SMA and
+      // EMA share the same math with different inputs.
+      techParts[t] = {
+        rsi:
+          typeof doc.rsi14 === "number"
+            ? {
+                long: normalizeRsiLong(doc.rsi14),
+                short: normalizeRsiShort(doc.rsi14),
+              }
+            : null,
+        smaTrend:
+          typeof doc.sma20 === "number" && typeof doc.sma50 === "number"
+            ? {
+                long: normalizeTrendLong(doc.sma20, doc.sma50),
+                short: normalizeTrendShort(doc.sma20, doc.sma50),
+              }
+            : null,
+        emaTrend:
+          typeof doc.ema20 === "number" && typeof doc.ema50 === "number"
+            ? {
+                long: normalizeTrendLong(doc.ema20, doc.ema50),
+                short: normalizeTrendShort(doc.ema20, doc.ema50),
+              }
+            : null,
+      };
       if (typeof doc.rsi14 === "number") {
-        techLong.push(normalizeRsiLong(doc.rsi14));
-        techShort.push(normalizeRsiShort(doc.rsi14));
         row.scores.technical = normalizeRsi(doc.rsi14); // legacy field: undirected RSI
-      }
-      if (typeof doc.sma20 === "number" && typeof doc.sma50 === "number") {
-        techLong.push(normalizeTrendLong(doc.sma20, doc.sma50));
-        techShort.push(normalizeTrendShort(doc.sma20, doc.sma50));
-      }
-      if (typeof doc.ema20 === "number" && typeof doc.ema50 === "number") {
-        // The trend normalizer is moving-average-agnostic — same math works
-        // for EMA pairs.
-        techLong.push(normalizeTrendLong(doc.ema20, doc.ema50));
-        techShort.push(normalizeTrendShort(doc.ema20, doc.ema50));
-      }
-      if (techLong.length > 0) {
-        row.scoresLong.technical =
-          techLong.reduce((s, v) => s + v, 0) / techLong.length;
-        row.scoresShort.technical =
-          techShort.reduce((s, v) => s + v, 0) / techShort.length;
       }
       row.metrics.technical = {
         rsi: doc.rsi14,
@@ -285,35 +302,36 @@ export class RatingsService {
       const t = doc.ticker as string;
       if (!t || !byTicker[t]) continue;
       const row = byTicker[t];
-      // ----- fundamental: equal-weighted blend of P/E + PEG + profit margin -----
-      // Three independent reads on "is the business worth owning":
-      //   • P/E           → price relative to current earnings
-      //   • PEG           → price relative to growth-adjusted earnings
-      //   • Profit margin → quality / pricing power
-      // Dividend yield and payout ratio are kept as descriptive metrics only —
-      // a high yield can be a value trap (long) and a stable dividend hurts
-      // a short thesis (short), and modeling that asymmetrically would just
-      // be curve-fitting at this universe size.
-      const fundLong: number[] = [];
-      const fundShort: number[] = [];
+      // ----- fundamental: collect per-component scores; final blend below -----
+      // Components: P/E (current-earnings valuation), PEG (growth-adjusted),
+      // profit margin (quality). Dividend yield and payout are kept as
+      // descriptive metrics only — directional logic for them at this
+      // universe size would just be curve-fitting.
+      fundParts[t] = {
+        pe:
+          typeof doc.peRatio === "number"
+            ? {
+                long: normalizePeLong(doc.peRatio),
+                short: normalizePeShort(doc.peRatio),
+              }
+            : null,
+        peg:
+          typeof doc.pegRatio === "number"
+            ? {
+                long: normalizePegLong(doc.pegRatio),
+                short: normalizePegShort(doc.pegRatio),
+              }
+            : null,
+        margin:
+          typeof doc.profitMargin === "number"
+            ? {
+                long: normalizeMarginLong(doc.profitMargin),
+                short: normalizeMarginShort(doc.profitMargin),
+              }
+            : null,
+      };
       if (typeof doc.peRatio === "number") {
-        fundLong.push(normalizePeLong(doc.peRatio));
-        fundShort.push(normalizePeShort(doc.peRatio));
         row.scores.fundamental = normalizePe(doc.peRatio); // legacy field
-      }
-      if (typeof doc.pegRatio === "number") {
-        fundLong.push(normalizePegLong(doc.pegRatio));
-        fundShort.push(normalizePegShort(doc.pegRatio));
-      }
-      if (typeof doc.profitMargin === "number") {
-        fundLong.push(normalizeMarginLong(doc.profitMargin));
-        fundShort.push(normalizeMarginShort(doc.profitMargin));
-      }
-      if (fundLong.length > 0) {
-        row.scoresLong.fundamental =
-          fundLong.reduce((s, v) => s + v, 0) / fundLong.length;
-        row.scoresShort.fundamental =
-          fundShort.reduce((s, v) => s + v, 0) / fundShort.length;
       }
       row.metrics.fundamental = {
         pe: doc.peRatio,
@@ -322,6 +340,68 @@ export class RatingsService {
         dividendYield: doc.dividendYield,
         payoutRatio: doc.payoutRatio,
       };
+    }
+
+    // ----- column means for mean-imputation -----
+    // Cross-ticker average of each component's score, restricted to
+    // tickers that actually have data for it. If no ticker in the universe
+    // has a given component, the mean falls back to neutral 50.
+    const colMean = <T extends Record<string, LRPair | null>>(
+      bag: Record<string, T>,
+      key: keyof T,
+    ): LRPair => {
+      let lSum = 0, sSum = 0, n = 0;
+      for (const parts of Object.values(bag)) {
+        const v = parts[key] as LRPair | null;
+        if (!v) continue;
+        lSum += v.long;
+        sSum += v.short;
+        n++;
+      }
+      return n > 0 ? { long: lSum / n, short: sSum / n } : { long: 50, short: 50 };
+    };
+
+    const techMeans = {
+      rsi: colMean(techParts, "rsi"),
+      smaTrend: colMean(techParts, "smaTrend"),
+      emaTrend: colMean(techParts, "emaTrend"),
+    };
+    const fundMeans = {
+      pe: colMean(fundParts, "pe"),
+      peg: colMean(fundParts, "peg"),
+      margin: colMean(fundParts, "margin"),
+    };
+
+    // ----- final dimension blend with mean-imputation -----
+    // For each ticker: if at least one component is observed for that
+    // dimension, fill the missing ones with the cross-ticker column mean
+    // and average all three. If *every* component is missing the dimension
+    // stays at NEUTRAL 50 (set by emptyScores at row construction time) —
+    // we don't fabricate a score from column means alone.
+    for (const t of Object.keys(byTicker)) {
+      const row = byTicker[t];
+
+      const tp = techParts[t];
+      if (tp && (tp.rsi || tp.smaTrend || tp.emaTrend)) {
+        const rsi      = tp.rsi      ?? techMeans.rsi;
+        const smaTrend = tp.smaTrend ?? techMeans.smaTrend;
+        const emaTrend = tp.emaTrend ?? techMeans.emaTrend;
+        row.scoresLong.technical  =
+          (rsi.long  + smaTrend.long  + emaTrend.long)  / 3;
+        row.scoresShort.technical =
+          (rsi.short + smaTrend.short + emaTrend.short) / 3;
+      }
+
+      const fp = fundParts[t];
+      if (fp && (fp.pe || fp.peg || fp.margin)) {
+        const pe     = fp.pe     ?? fundMeans.pe;
+        const peg    = fp.peg    ?? fundMeans.peg;
+        const margin = fp.margin ?? fundMeans.margin;
+        row.scoresLong.fundamental  =
+          (pe.long  + peg.long  + margin.long)  / 3;
+        row.scoresShort.fundamental =
+          (pe.short + peg.short + margin.short) / 3;
+      }
     }
 
     // ----- sentiment: polarity attenuated by article count -----
