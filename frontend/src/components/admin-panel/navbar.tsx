@@ -11,13 +11,19 @@ import { useEffect, useState } from "react";
 interface NavbarProps {
   title: string;
   hideTitleOnScroll?: boolean;
+  /** When true, the right-side icon cluster (ModeToggle, Sign Up, UserNav)
+   *  fades out once the user scrolls past the masthead. Used on dense pages
+   *  like /analysis/ratings where page-level controls (Find ticker, How
+   *  scores work) need the right edge to themselves. */
+  hideIconsOnScroll?: boolean;
 }
 
-export function Navbar({ title, hideTitleOnScroll }: NavbarProps) {
+export function Navbar({ title, hideTitleOnScroll, hideIconsOnScroll }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const trackScroll = !!(hideTitleOnScroll || hideIconsOnScroll);
 
   useEffect(() => {
-    if (!hideTitleOnScroll) return;
+    if (!trackScroll) return;
 
     const updateScrolled = () => setIsScrolled(window.scrollY > 8);
 
@@ -25,7 +31,9 @@ export function Navbar({ title, hideTitleOnScroll }: NavbarProps) {
     window.addEventListener("scroll", updateScrolled, { passive: true });
 
     return () => window.removeEventListener("scroll", updateScrolled);
-  }, [hideTitleOnScroll]);
+  }, [trackScroll]);
+
+  const iconsHidden = !!(hideIconsOnScroll && isScrolled);
 
   return (
     <header className="sticky top-0 z-10 w-full bg-background/95 shadow backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:shadow-secondary">
@@ -36,7 +44,12 @@ export function Navbar({ title, hideTitleOnScroll }: NavbarProps) {
             {title}
           </h1>
         </div>
-        <div className="flex flex-1 items-center space-x-2 justify-end">
+        <div
+          className={`flex flex-1 items-center space-x-2 justify-end transition-opacity duration-200 ${
+            iconsHidden ? "pointer-events-none opacity-0" : "opacity-100"
+          }`}
+          aria-hidden={iconsHidden}
+        >
           <ModeToggle />
           <SignedOut>
             <Link href="/signup">

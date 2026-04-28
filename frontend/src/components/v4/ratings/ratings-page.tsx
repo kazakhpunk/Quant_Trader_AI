@@ -35,6 +35,21 @@ export function RatingsPage() {
   const sidebar = useStore(useSidebarToggle, (s) => s);
   const sidebarOpen = sidebar?.isOpen !== false;
 
+  // Match the Navbar's scroll threshold (8px) so the buttons-flush-right
+  // transition lines up with the navbar-icons-fade-out transition.
+  const [isScrolled, setIsScrolled] = useState(false);
+  useEffect(() => {
+    const update = () => setIsScrolled(window.scrollY > 8);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
+
+  // Buttons go flush right whenever the navbar icons aren't blocking the
+  // edge: either the sidebar is open (narrower content area, edge clears
+  // the icons) OR the user has scrolled (icons faded out by the navbar).
+  const flushRight = sidebarOpen || isScrolled;
+
   useEffect(() => {
     let alive = true;
     getRatings()
@@ -77,7 +92,16 @@ export function RatingsPage() {
       <StickySubnav
         left={<DirectionToggle value={direction} onChange={setDirection} />}
         right={
-          <div className="flex items-center gap-2 xl:mr-16 mr-8">
+          <div
+            className={cn(
+              "flex items-center gap-2 transition-[margin] duration-200",
+              // Flush right whenever it's safe — sidebar open (narrower
+              // content area clears the navbar icons) or scrolled past the
+              // 8px threshold (navbar icons faded out). Otherwise reserve
+              // space so the controls don't kiss the navbar's icon cluster.
+              flushRight ? "" : "xl:mr-16 mr-8",
+            )}
+          >
             <TickerSearch rows={projected} />
             <MethodologyDialog />
           </div>

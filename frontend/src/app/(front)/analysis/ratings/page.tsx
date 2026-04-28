@@ -8,7 +8,7 @@ import { RatingsPage } from "@/components/v4/ratings/ratings-page";
 
 export default function Page() {
   return (
-    <ContentLayout title="Ratings" hideTitleOnScroll>
+    <ContentLayout title="Ratings" hideTitleOnScroll hideIconsOnScroll>
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem><BreadcrumbLink asChild><Link href="/">Home</Link></BreadcrumbLink></BreadcrumbItem>
