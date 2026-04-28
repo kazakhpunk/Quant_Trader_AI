@@ -41,7 +41,7 @@ const DIMENSIONS: Dim[] = [
     formula:
       "score = mean( clamp(100 − rsi),  clamp(50 + smaGap% × 5),  clamp(50 + emaGap% × 5) )",
     plain:
-      "Three direction-aware reads averaged: RSI catches short-term momentum, the SMA gap catches slow trend, the EMA gap catches the same trend faster. Components missing from the upstream data are dropped before averaging.",
+      "Three direction-aware reads averaged: RSI catches short-term momentum, the SMA gap catches slow trend, the EMA gap catches the same trend faster. Components missing from the upstream data are imputed with the cross-ticker mean of that component before averaging.",
     terms: [
       { term: "RSI", meaning: "0–100 momentum oscillator. <30 oversold (good for long), >70 overbought (good for short)." },
       { term: "SMA20 / SMA50", meaning: "Simple moving averages. SMA20 above SMA50 = uptrend." },
@@ -177,7 +177,7 @@ export function MethodologyDialog() {
             <span className="uppercase tracking-wider text-foreground">price · vol</span>
             <span>= shown as informational columns; do not affect the composite</span>
             <span className="uppercase tracking-wider text-foreground">missing data</span>
-            <span>= component dropped from the dimension's mean; if all components missing, dim defaults to 50</span>
+            <span>= component imputed with the cross-ticker mean of that component; if every component in a dimension is missing, dim defaults to 50</span>
           </div>
         </div>
 
@@ -260,7 +260,7 @@ export function MethodologyDialog() {
         {/* FOOTER */}
         <div className="flex items-center justify-between gap-4 border-t border-border/60 bg-muted/20 px-8 py-4">
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
-            Each dimension averages every available component metric — multi-metric weighting on the roadmap.
+            Each dimension averages all of its component metrics; missing fields are mean-imputed from the cross-ticker average rather than dropped.
           </p>
           <Button onClick={() => setOpen(false)} className="gap-2">
             Got it
