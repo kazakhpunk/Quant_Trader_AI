@@ -170,7 +170,9 @@ export function TickerSearch({ rows }: { rows: RatingRow[] }) {
 
       <PopoverContent
         align="end"
-        sideOffset={8}
+        alignOffset={-560}
+        sideOffset={12}
+        collisionPadding={16}
         onCloseAutoFocus={(e) => {
           const pendingJump = pendingJumpRef.current;
           if (!pendingJump) return;
@@ -213,7 +215,7 @@ export function TickerSearch({ rows }: { rows: RatingRow[] }) {
         </div>
 
         {/* RESULTS */}
-        <div className="max-h-[24rem] overflow-y-auto">
+        <div className="max-h-[12rem] overflow-y-auto">
           {!q.trim() ? (
             <p className="px-4 py-6 text-center font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70">
               Start typing to find a ticker
